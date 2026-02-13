@@ -941,7 +941,7 @@ void UI::drawAboutPopup() {
     int y = py + 25;
 
     // Title
-    drawTextCentered("pkTeraRaid - SV Raid Finder", cx, y, COLOR_SHINY, fontLarge_);
+    drawTextCentered(APP_TITLE, cx, y, COLOR_SHINY, fontLarge_);
     y += 38;
 
     // Version / author

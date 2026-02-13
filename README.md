@@ -6,7 +6,7 @@ A Nintendo Switch homebrew application for viewing Tera Raid details in Pokemon 
 
 - **Dual mode support**
   - **Save file mode** (Title Override): Reads raid data from the game's save file. Supports profile selection and multiple game versions.
-  - **Live mode** (Applet/HBMenu overlay): Reads raid data directly from the running game's memory via dmntcht. Auto-detects Scarlet or Violet.
+  - **Live mode** (Applet / HBMenu overlay): Reads raid data directly from the running game's memory via dmntcht. Auto-detects Scarlet or Violet.
 - **Interactive map view** with raid locations for all three regions:
   - Paldea
   - Kitakami (The Teal Mask DLC)

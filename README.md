@@ -1,4 +1,4 @@
-# pkTeraRaid - SV Raid Finder
+# pkTeraRaid - Map Viewer
 
 A Nintendo Switch homebrew application for viewing Tera Raid details in Pokemon Scarlet & Violet.
 
@@ -27,7 +27,7 @@ A Nintendo Switch homebrew application for viewing Tera Raid details in Pokemon 
 
 ## Compatibility
 
-Scarlet / Violet game version **4.0.0 only** !
+Scarlet / Violet game version **3.0.1 / 4.0.0 only** !
 
 ## Requirements
 

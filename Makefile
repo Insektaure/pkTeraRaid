@@ -10,8 +10,8 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
-APP_TITLE	:=	pkTeraRaid - SV Raid Finder
-APP_VERSION 	:=	1.0.0
+APP_TITLE	:=	pkTeraRaid - Map Viewer
+APP_VERSION :=	1.0.0
 APP_AUTHOR	:=	Insektaure
 
 TARGET		:=	$(notdir $(CURDIR))

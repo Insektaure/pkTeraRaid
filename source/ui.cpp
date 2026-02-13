@@ -192,7 +192,19 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
         SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
         SDL_RenderClear(renderer_);
         drawTextCentered(title, SCREEN_W / 2, SCREEN_H / 2 - 40, COLOR_RED, fontLarge_);
-        drawTextCentered(body, SCREEN_W / 2, SCREEN_H / 2 + 15, COLOR_TEXT_DIM, font_);
+
+        // Render body with newline support (centered)
+        TTF_SetFontWrappedAlign(font_, TTF_WRAPPED_ALIGN_CENTER);
+        SDL_Surface* bodySurf = TTF_RenderUTF8_Blended_Wrapped(font_, body.c_str(), COLOR_TEXT_DIM, 0);
+        if (bodySurf) {
+            SDL_Texture* bodyTex = SDL_CreateTextureFromSurface(renderer_, bodySurf);
+            SDL_Rect bodyDst = {(SCREEN_W - bodySurf->w) / 2, SCREEN_H / 2 + 15 - bodySurf->h / 2,
+                                bodySurf->w, bodySurf->h};
+            SDL_RenderCopy(renderer_, bodyTex, nullptr, &bodyDst);
+            SDL_DestroyTexture(bodyTex);
+            SDL_FreeSurface(bodySurf);
+        }
+
         drawTextCentered("Press B to dismiss", SCREEN_W / 2, SCREEN_H / 2 + 65, COLOR_TEXT_DIM, fontSmall_);
         SDL_RenderPresent(renderer_);
         SDL_Delay(16);

@@ -81,6 +81,19 @@ make clean
    - **Save file mode**: Hold R while launching any game to open HBMenu via title override, then select pkTeraRaid.
    - **Live mode**: With Pokemon SV running, open the album to access HBMenu overlay, then select pkTeraRaid.
 
+## Screenshots
+
+<div align="center">
+  <img src="screenshots/001.jpg">
+  <img src="screenshots/002.jpg">
+  <img src="screenshots/003.jpg">
+  <img src="screenshots/004.jpg">
+  <img src="screenshots/005.jpg">
+  <img src="screenshots/006.jpg">
+  <img src="screenshots/007.jpg">
+  <img src="screenshots/008.jpg">
+</div>  
+
 ## Credits
 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch - Save file structure and Pokemon data

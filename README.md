@@ -1,8 +1,10 @@
 # pkTeraRaid - Map Viewer
 
-A Nintendo Switch homebrew application for viewing Tera Raid details in Pokemon Scarlet & Violet.
+A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarlet & Violet and Sword & Shield.
 
 ## Features
+
+### Pokemon Scarlet & Violet — Tera Raids
 
 - **Dual mode support**
   - **Save file mode** (Title Override): Reads raid data from the game's save file. Supports profile selection and multiple game versions.
@@ -23,17 +25,35 @@ A Nintendo Switch homebrew application for viewing Tera Raid details in Pokemon 
 - **Raid list** with scrollable list panel alongside the map
 - **Profile selector** with support for multiple Switch user profiles
 - **Game selector** for switching between Scarlet and Violet save data (when available)
-- **About screen** with credits and controls
+
+### Pokemon Sword & Shield — Den Crawler
+
+- **Live mode only** (Applet / HBMenu overlay): Reads den data directly from the running game's memory. Auto-detects Sword or Shield.
+- **Interactive map view** with den locations across all three areas:
+  - Wild Area (100 dens)
+  - Isle of Armor (90 dens)
+  - Crown Tundra (86 dens)
+- **Den information** including:
+  - Species with sprite preview
+  - Star rating (1-5 stars)
+  - Beam type (Normal / Rare / Event)
+  - Flawless IVs
+  - Shiny prediction (up to 10,000 advances)
+  - Location name
+  - Full 64-bit seed
+- **Scrollable den list** with active dens filtered by region
+- **Detail popup** with full den information
 
 ## Compatibility
 
-Scarlet / Violet game version **3.0.1 / 4.0.0 only** !
+- Scarlet / Violet game version **3.0.1 / 4.0.0 only** !
+- Sword / Shield — **Live mode only** (any game version)
 
 ## Requirements
 
 - Nintendo Switch with [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) custom firmware
-- Pokemon Scarlet or Violet (physical or digital)
-- **Save file mode**: Launch via title override (hold R while launching a game)
+- Pokemon Scarlet, Violet, Sword, or Shield (physical or digital)
+- **Save file mode** (SV only): Launch via title override (hold R while launching a game)
 - **Live mode**: Launch from HBMenu overlay (album applet) while the game is running
 
 ## Controls
@@ -43,7 +63,7 @@ Scarlet / Violet game version **3.0.1 / 4.0.0 only** !
 | D-Pad / Left Stick | Navigate |
 | A | Select / View details |
 | B | Back / Close details |
-| L / R | Switch map tab (Paldea / Kitakami / Blueberry) |
+| L / R | Switch map tab |
 | - | About |
 | + | Quit |
 
@@ -99,6 +119,8 @@ make clean
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch - Save file structure and Pokemon data
 - [Tera-Finder](https://github.com/Manu098vm/Tera-Finder) by Manu098vm - Raid encounter logic and data resources
 - [RaidCrawler](https://github.com/LegoFigure11/RaidCrawler) by LegoFigure11 - Map coordinate formulas
+- [CaptureSight](https://github.com/zaksabeast/CaptureSight) by zaksabeast - SwSh den data structures and encounter tables
+- [PKHeX Raid Plugin](https://github.com/architPokemon/PKHeX_Raid_Plugin) - SwSh den map coordinates and location data
 - [JKSV](https://github.com/J-D-K/JKSV) by J-D-K - Save data access approach
 - [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) - dmntcht for live memory reading
 

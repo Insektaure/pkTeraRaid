@@ -1,13 +1,10 @@
 #include "ui.h"
 #include "game_type.h"
-#include "swsh/den_crawler.h"
 
 #ifdef __SWITCH__
 #include <switch.h>
 #include "dmnt_mem.h"
 #endif
-
-#include <cstdio>
 
 #include <string>
 
@@ -80,22 +77,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (isSwSh(game)) {
-            DenCrawler crawler;
-            if (crawler.readLive(game)) {
-                int active = 0;
-                for (auto& d : crawler.dens())
-                    if (d.isActive) active++;
-
-                char msg[256];
-                snprintf(msg, sizeof(msg),
-                         "Read %d active dens (of %d total) from %s.",
-                         active, (int)crawler.dens().size(),
-                         gameDisplayNameOf(game));
-                ui.showMessageAndWait("SwSh Den Crawler", msg);
-            } else {
-                ui.showMessageAndWait("Error",
-                                      "Failed to read den data from memory.");
-            }
+            ui.runSwSh(basePath, game);
         } else {
             ui.runLive(basePath, game);
         }

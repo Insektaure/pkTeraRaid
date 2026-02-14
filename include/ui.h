@@ -2,6 +2,8 @@
 #include "raid_reader.h"
 #include "account.h"
 #include "text_data.h"
+#include "swsh/den_crawler.h"
+#include "swsh/den_locations.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -20,6 +22,7 @@ public:
     void showWorking(const std::string& msg);
     void run(const std::string& basePath);
     void runLive(const std::string& basePath, GameVersion game);
+    void runSwSh(const std::string& basePath, GameVersion game);
 
 private:
     SDL_Window*          window_    = nullptr;
@@ -161,4 +164,26 @@ private:
     std::string getTypeName(uint8_t type) const;
     std::string getStarString(uint8_t stars) const;
     SDL_Color getTypeColor(uint8_t type) const;
+
+    // --- SwSh Den Crawler ---
+    DenCrawler denCrawler_;
+    int swshTab_ = 0;       // 0=Wild Area, 1=IoA, 2=Crown Tundra
+    int swshCursor_ = 0;
+    int swshScroll_ = 0;
+    bool swshShowDetail_ = false;
+    std::vector<int> swshFiltered_;  // indices into denCrawler_.dens()
+
+    // SwSh map textures
+    SDL_Texture* mapWildArea_ = nullptr;
+    SDL_Texture* mapIoA_      = nullptr;
+    SDL_Texture* mapCT_       = nullptr;
+
+    void rebuildSwShFilteredList();
+    void drawSwShViewFrame();
+    void drawSwShMapPanel();
+    void drawSwShMapTabs(int x, int y, int w);
+    void drawSwShListPanel();
+    void drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected, int rowH);
+    void drawSwShDetailPopup(const SwShDenInfo& den);
+    void handleSwShViewInput(bool& running);
 };

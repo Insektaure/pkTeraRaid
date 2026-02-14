@@ -81,6 +81,16 @@ inline bool readBlock(const uint64_t* chain, int chainLen, uint8_t* buf, size_t 
     return R_SUCCEEDED(rc);
 }
 
+// Read a block directly from the game heap at a fixed offset.
+// Used by SwSh den crawler (dens are at heap base + offset, not pointer chains).
+inline bool readHeap(uint64_t heapOffset, uint8_t* buf, size_t size) {
+    if (!g_initialized) return false;
+
+    uint64_t addr = g_meta.heap_extents.base + heapOffset;
+    Result rc = dmntchtReadCheatProcessMemory(addr, buf, size);
+    return R_SUCCEEDED(rc);
+}
+
 } // namespace DmntMem
 
 #endif // __SWITCH__

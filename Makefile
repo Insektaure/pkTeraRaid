@@ -16,7 +16,7 @@ APP_AUTHOR	:=	Insektaure
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/swsh
 DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs

@@ -1,10 +1,13 @@
 #include "ui.h"
 #include "game_type.h"
+#include "swsh/den_crawler.h"
 
 #ifdef __SWITCH__
 #include <switch.h>
 #include "dmnt_mem.h"
 #endif
+
+#include <cstdio>
 
 #include <string>
 
@@ -61,17 +64,41 @@ int main(int argc, char* argv[]) {
             game = GameVersion::Scarlet;
         } else if (tid == VIOLET_TITLE_ID) {
             game = GameVersion::Violet;
+        } else if (tid == SWORD_TITLE_ID) {
+            game = GameVersion::Sword;
+        } else if (tid == SHIELD_TITLE_ID) {
+            game = GameVersion::Shield;
         } else {
             ui.showMessageAndWait("Wrong Game",
-                                  "Pokemon Scarlet or Violet is not running.\n"
-                                  "Please launch the game first.");
+                                  "No supported game is running.\n"
+                                  "Please launch Pokemon Sword, Shield,\n"
+                                  "Scarlet, or Violet.");
             DmntMem::exit();
             ui.shutdown();
             romfsExit();
             return 1;
         }
 
-        ui.runLive(basePath, game);
+        if (isSwSh(game)) {
+            DenCrawler crawler;
+            if (crawler.readLive(game)) {
+                int active = 0;
+                for (auto& d : crawler.dens())
+                    if (d.isActive) active++;
+
+                char msg[256];
+                snprintf(msg, sizeof(msg),
+                         "Read %d active dens (of %d total) from %s.",
+                         active, (int)crawler.dens().size(),
+                         gameDisplayNameOf(game));
+                ui.showMessageAndWait("SwSh Den Crawler", msg);
+            } else {
+                ui.showMessageAndWait("Error",
+                                      "Failed to read den data from memory.");
+            }
+        } else {
+            ui.runLive(basePath, game);
+        }
         DmntMem::exit();
     } else {
         // Title override mode: read from save file

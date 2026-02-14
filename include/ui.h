@@ -2,6 +2,7 @@
 #include "raid_reader.h"
 #include "account.h"
 #include "text_data.h"
+#include "personal_table.h"
 #include "swsh/den_crawler.h"
 #include "swsh/den_locations.h"
 #include <SDL2/SDL.h>
@@ -164,6 +165,9 @@ private:
     std::string getTypeName(uint8_t type) const;
     std::string getStarString(uint8_t stars) const;
     SDL_Color getTypeColor(uint8_t type) const;
+
+    // Personal data (for type lookups)
+    PersonalTable personal_;
 
     // --- SwSh Den Crawler ---
     DenCrawler denCrawler_;

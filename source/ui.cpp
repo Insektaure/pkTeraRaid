@@ -746,6 +746,8 @@ void UI::selectGame(GameVersion game) {
     if (isSwSh(game)) {
         // --- Sword / Shield save file path ---
         speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
+        typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+        personal_.load(dataDir + "personal_sv");
 
         auto loadMap = [&](const char* name) -> SDL_Texture* {
             std::string path = mapDir + name;
@@ -1582,6 +1584,8 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
 #endif
 
     speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
+    typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+    personal_.load(dataDir + "personal_sv");
 
     // Load SwSh map images
     auto loadMap = [&](const char* name) -> SDL_Texture* {
@@ -1925,13 +1929,20 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
 
     int textX = x + spriteSize + 12;
 
-    // Line 1: Stars | Species | Rare/Event tag
+    // Fixed column offsets (relative to textX) matching SV layout
+    // Line 1: Stars | Species | Level | Types | Shiny/Tags
+    constexpr int COL_STARS    = 0;
+    constexpr int COL_SPECIES  = 55;
+    constexpr int COL_LEVEL    = 210;
+    constexpr int COL_TYPES    = 270;
+    constexpr int COL_TAGS     = 420;
+
     int line1Y = y + rh / 2 - 22;
     if (line1Y < y + 2) line1Y = y + 2;
 
     // Stars (display as 1-5 stars)
     std::string stars = getStarString(den.stars + 1);
-    drawText(stars, textX, line1Y, textStar, font_);
+    drawText(stars, textX + COL_STARS, line1Y, textStar, font_);
 
     // Species name
     std::string species;
@@ -1942,14 +1953,46 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
     } else {
         species = "???";
     }
-    drawText(species, textX + 55, line1Y, textMain, font_);
+    drawText(species, textX + COL_SPECIES, line1Y, textMain, font_);
 
-    // Rare/Event tags
+    // Level (derived from star rating)
+    if (!den.isEvent && den.species > 0) {
+        constexpr int starMaxLevel[] = {20, 30, 40, 50, 60};
+        int level = (den.stars <= 4) ? starMaxLevel[den.stars] : 60;
+        char lvl[16];
+        snprintf(lvl, sizeof(lvl), "Lv.%d", level);
+        drawText(lvl, textX + COL_LEVEL, line1Y, textDim, font_);
+    }
+
+    // Types (from personal table)
+    if (!den.isEvent && den.species > 0) {
+        auto info = personal_[den.species];
+        uint8_t t1 = info.type1();
+        uint8_t t2 = info.type2();
+        SDL_Color t1Col = isCurrentlyShiny ? SDL_Color{50, 30, 10, 255} : getTypeColor(t1);
+        std::string t1Name = getTypeName(t1);
+        drawText(t1Name, textX + COL_TYPES, line1Y, t1Col, font_);
+        if (t2 != t1) {
+            int tw1, th1;
+            TTF_SizeUTF8(font_, t1Name.c_str(), &tw1, &th1);
+            drawText(" / ", textX + COL_TYPES + tw1, line1Y, textDim, font_);
+            int twSlash, thSlash;
+            TTF_SizeUTF8(font_, " / ", &twSlash, &thSlash);
+            SDL_Color t2Col = isCurrentlyShiny ? SDL_Color{50, 30, 10, 255} : getTypeColor(t2);
+            drawText(getTypeName(t2), textX + COL_TYPES + tw1 + twSlash, line1Y, t2Col, font_);
+        }
+    }
+
+    // Tags: Rare/Event + Shiny
     if (den.isRare) {
-        drawText("Rare", textX + 250, line1Y, SDL_Color{200, 120, 255, 255}, font_);
+        drawText("Rare", textX + COL_TAGS, line1Y, SDL_Color{200, 120, 255, 255}, font_);
     }
     if (den.isEvent) {
-        drawText("Event", textX + 250, line1Y, SDL_Color{100, 200, 255, 255}, font_);
+        drawText("Event", textX + COL_TAGS, line1Y, SDL_Color{100, 200, 255, 255}, font_);
+    }
+    if (isCurrentlyShiny) {
+        int tagOffset = (den.isRare || den.isEvent) ? COL_TAGS + 55 : COL_TAGS;
+        drawText("Shiny!", tagOffset + textX, line1Y, SDL_Color{120, 40, 0, 255}, font_);
     }
 
     // Line 2: Location | Shiny info | IVs | Seed
@@ -1985,7 +2028,7 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
 }
 
 void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
-    constexpr int POP_W = 520, POP_H = 340;
+    constexpr int POP_W = 520, POP_H = 390;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -2051,6 +2094,32 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
             drawText(SwShDenLocations::LOCATION_NAMES[locId], lx + 85, ly, COLOR_TEXT, fontSmall_);
     }
     ly += lineH;
+
+    if (!den.isEvent && den.species > 0) {
+        drawText("Level:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
+        constexpr int starMaxLevel[] = {20, 30, 40, 50, 60};
+        int level = (den.stars <= 4) ? starMaxLevel[den.stars] : 60;
+        char lvlBuf[16];
+        snprintf(lvlBuf, sizeof(lvlBuf), "%d", level);
+        drawText(lvlBuf, lx + 85, ly, COLOR_TEXT, fontSmall_);
+        ly += lineH;
+
+        drawText("Type:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
+        auto info = personal_[den.species];
+        uint8_t t1 = info.type1();
+        uint8_t t2 = info.type2();
+        std::string t1Name = getTypeName(t1);
+        drawText(t1Name, lx + 85, ly, getTypeColor(t1), fontSmall_);
+        if (t2 != t1) {
+            int tw1, th1;
+            TTF_SizeUTF8(fontSmall_, t1Name.c_str(), &tw1, &th1);
+            drawText(" / ", lx + 85 + tw1, ly, COLOR_TEXT_DIM, fontSmall_);
+            int twSlash, thSlash;
+            TTF_SizeUTF8(fontSmall_, " / ", &twSlash, &thSlash);
+            drawText(getTypeName(t2), lx + 85 + tw1 + twSlash, ly, getTypeColor(t2), fontSmall_);
+        }
+        ly += lineH;
+    }
 
     drawText("Beam:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     const char* beamStr = den.isEvent ? "Event" : (den.isRare ? "Rare" : "Normal");

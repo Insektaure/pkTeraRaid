@@ -7,8 +7,8 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
 ### Pokemon Scarlet & Violet — Tera Raids
 
 - **Dual mode support**
-  - **Save file mode** (Title Override): Reads raid data from the game's save file. Supports profile selection and multiple game versions.
-  - **Live mode** (Applet / HBMenu overlay): Reads raid data directly from the running game's memory via dmntcht. Auto-detects Scarlet or Violet.
+  - **Save file mode** (Title Override): Reads raid data from the game's save file. Supports profile selection.
+  - **Live mode** (Applet / HBMenu overlay): Reads raid data directly from the running game's memory. Auto-detects Scarlet or Violet.
 - **Interactive map view** with raid locations for all three regions:
   - Paldea
   - Kitakami (The Teal Mask DLC)
@@ -16,7 +16,7 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
 - **Detailed raid information** including:
   - Species with sprite preview
   - Star rating (1-6 stars, including 6-star black raids)
-  - Tera type
+  - Tera type (with color-coded display)
   - IVs, Nature, Ability
   - Moves
   - Shiny status
@@ -24,18 +24,22 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - PID and EC
 - **Raid list** with scrollable list panel alongside the map
 - **Profile selector** with support for multiple Switch user profiles
-- **Game selector** for switching between Scarlet and Violet save data (when available)
+- **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
 ### Pokemon Sword & Shield — Den Crawler
 
-- **Live mode only** (Applet / HBMenu overlay): Reads den data directly from the running game's memory. Auto-detects Sword or Shield.
+- **Dual mode support**
+  - **Save file mode** (Title Override): Reads den data from the game's save file. Supports profile selection.
+  - **Live mode** (Applet / HBMenu overlay): Reads den data directly from the running game's memory. Auto-detects Sword or Shield.
 - **Interactive map view** with den locations across all three areas:
-  - Wild Area (100 dens)
-  - Isle of Armor (90 dens)
-  - Crown Tundra (86 dens)
+  - Wild Area
+  - Isle of Armor
+  - Crown Tundra
 - **Den information** including:
   - Species with sprite preview
   - Star rating (1-5 stars)
+  - Level (derived from star rating)
+  - Pokemon types (with color-coded display)
   - Beam type (Normal / Rare / Event)
   - Flawless IVs
   - Shiny prediction (up to 10,000 advances)
@@ -43,17 +47,18 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - Full 64-bit seed
 - **Scrollable den list** with active dens filtered by region
 - **Detail popup** with full den information
+- **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
 ## Compatibility
 
-- Scarlet / Violet game version **3.0.1 / 4.0.0 only** !
-- Sword / Shield — **Live mode only** (any game version)
+- Scarlet / Violet version **3.0.1 / 4.0.0 only** !
+- Sword / Shield version **1.3.2 only** !
 
 ## Requirements
 
 - Nintendo Switch with [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) custom firmware
 - Pokemon Scarlet, Violet, Sword, or Shield (physical or digital)
-- **Save file mode** (SV only): Launch via title override (hold R while launching a game)
+- **Save file mode**: Launch via title override (hold R while launching a game)
 - **Live mode**: Launch from HBMenu overlay (album applet) while the game is running
 
 ## Controls

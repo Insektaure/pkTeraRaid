@@ -1935,7 +1935,7 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
     constexpr int COL_SPECIES  = 55;
     constexpr int COL_LEVEL    = 210;
     constexpr int COL_TYPES    = 270;
-    constexpr int COL_TAGS     = 420;
+
 
     int line1Y = y + rh / 2 - 22;
     if (line1Y < y + 2) line1Y = y + 2;
@@ -1983,16 +1983,21 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
         }
     }
 
-    // Tags: Rare/Event + Shiny
-    if (den.isRare) {
-        drawText("Rare", textX + COL_TAGS, line1Y, SDL_Color{200, 120, 255, 255}, font_);
-    }
-    if (den.isEvent) {
-        drawText("Event", textX + COL_TAGS, line1Y, SDL_Color{100, 200, 255, 255}, font_);
-    }
-    if (isCurrentlyShiny) {
-        int tagOffset = (den.isRare || den.isEvent) ? COL_TAGS + 55 : COL_TAGS;
-        drawText("Shiny!", tagOffset + textX, line1Y, SDL_Color{120, 40, 0, 255}, font_);
+    // Tags: Rare/Event + Shiny (right-aligned to avoid overlapping types)
+    {
+        int tagX = x + w - 8;
+        if (isCurrentlyShiny) {
+            drawTextRight("Shiny!", tagX, line1Y, SDL_Color{120, 40, 0, 255}, font_);
+            int tw0, th0;
+            TTF_SizeUTF8(font_, "Shiny!", &tw0, &th0);
+            tagX -= tw0 + 8;
+        }
+        if (den.isRare) {
+            drawTextRight("Rare", tagX, line1Y, SDL_Color{200, 120, 255, 255}, font_);
+        }
+        if (den.isEvent) {
+            drawTextRight("Event", tagX, line1Y, SDL_Color{100, 200, 255, 255}, font_);
+        }
     }
 
     // Line 2: Location | Shiny info | IVs | Seed

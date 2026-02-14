@@ -3,10 +3,19 @@
 #include "swsh/sword_nests.h"
 #include "swsh/shield_nests.h"
 #include "xoroshiro128plus.h"
+#include "swish_crypto.h"
+#include "sc_block.h"
+#include <cstdio>
 
 #ifdef __SWITCH__
 #include "dmnt_mem.h"
 #endif
+
+namespace {
+    constexpr uint32_t KEY_RAID_GALAR = 0x9033eb7b;
+    constexpr uint32_t KEY_RAID_IOA   = 0x158DA896;
+    constexpr uint32_t KEY_RAID_CT    = 0x148DA703;
+}
 
 bool DenCrawler::readLive(GameVersion version) {
     dens_.clear();
@@ -27,6 +36,80 @@ bool DenCrawler::readLive(GameVersion version) {
 #else
     return false;
 #endif
+}
+
+bool DenCrawler::readSave(const std::string& savePath, GameVersion version) {
+    dens_.clear();
+    version_ = version;
+
+    FILE* f = fopen(savePath.c_str(), "rb");
+    if (!f) return false;
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    std::vector<uint8_t> data(size);
+    fread(data.data(), 1, size, f);
+    fclose(f);
+
+    auto blocks = SwishCrypto::decrypt(data.data(), data.size());
+    if (blocks.empty()) return false;
+
+    // Find den blocks by key
+    const SCBlock* galarBlock = SwishCrypto::findBlock(blocks, KEY_RAID_GALAR);
+    const SCBlock* ioaBlock   = SwishCrypto::findBlock(blocks, KEY_RAID_IOA);
+    const SCBlock* ctBlock    = SwishCrypto::findBlock(blocks, KEY_RAID_CT);
+
+    if (!galarBlock || !ioaBlock || !ctBlock)
+        return false;
+
+    bool ok = true;
+    ok &= readRegionFromBuffer(SwShDenRegion::Vanilla,
+                               galarBlock->data.data(), galarBlock->data.size(),
+                               SwShOffsets::DEN_COUNT_VANILLA, 0);
+    ok &= readRegionFromBuffer(SwShDenRegion::IslandOfArmor,
+                               ioaBlock->data.data(), ioaBlock->data.size(),
+                               SwShOffsets::DEN_COUNT_IOA, 100);
+    ok &= readRegionFromBuffer(SwShDenRegion::CrownTundra,
+                               ctBlock->data.data(), ctBlock->data.size(),
+                               SwShOffsets::DEN_COUNT_CT, 190);
+    return ok;
+}
+
+bool DenCrawler::readRegionFromBuffer(SwShDenRegion region, const uint8_t* data,
+                                       size_t dataSize, int count, int hashIndexBase) {
+    const size_t needed = count * SwShDenData::SIZE;
+    if (dataSize < needed) return false;
+
+    for (int i = 0; i < count; i++) {
+        SwShDenData den{};
+        std::memcpy(den.raw, data + i * SwShDenData::SIZE, SwShDenData::SIZE);
+
+        SwShDenInfo info{};
+        info.denIndex   = hashIndexBase + i;
+        info.region     = region;
+        info.seed       = den.seed();
+        info.stars      = den.stars();
+        info.isActive   = den.isActive();
+        info.isRare     = den.isRare();
+        info.isEvent    = den.isEvent();
+        info.species    = 0;
+        info.flawlessIVs = 0;
+        info.shinyType  = SwShShinyType::None;
+        info.shinyAdvance = 0;
+
+        if (info.isActive) {
+            resolveEncounter(den, info.denIndex, info.species, info.flawlessIVs);
+
+            if (!info.isEvent) {
+                info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
+            }
+        }
+
+        dens_.push_back(info);
+    }
+    return true;
 }
 
 bool DenCrawler::readRegion(SwShDenRegion region, uint64_t heapOffset,

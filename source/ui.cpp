@@ -497,7 +497,10 @@ void UI::selectProfile(int index) {
 
     // Only show games that have save data for this profile
     availableGames_.clear();
-    constexpr GameVersion allGames[] = {GameVersion::Scarlet, GameVersion::Violet};
+    constexpr GameVersion allGames[] = {
+        GameVersion::Sword, GameVersion::Shield,
+        GameVersion::Scarlet, GameVersion::Violet
+    };
     for (auto g : allGames) {
         if (account_.hasSaveData(index, g))
             availableGames_.push_back(g);
@@ -505,7 +508,7 @@ void UI::selectProfile(int index) {
 
     if (availableGames_.empty()) {
         showMessageAndWait("No Save Data",
-            "No Scarlet/Violet save data found for this profile.");
+            "No Pokemon save data found for this profile.");
         return;
     }
 
@@ -523,7 +526,10 @@ void UI::loadGameIcons() {
     std::string cacheDir = basePath_ + "cache/";
     mkdir(cacheDir.c_str(), 0755);
 
-    constexpr GameVersion games[] = {GameVersion::Scarlet, GameVersion::Violet};
+    constexpr GameVersion games[] = {
+        GameVersion::Sword, GameVersion::Shield,
+        GameVersion::Scarlet, GameVersion::Violet
+    };
 
     // Try loading from cache first
     bool needSystem = false;
@@ -624,16 +630,22 @@ void UI::drawGameSelectorFrame() {
             SDL_RenderCopy(renderer_, it->second, nullptr, &dst);
         } else {
             // Colored placeholder
-            bool isScarlet = (availableGames_[i] == GameVersion::Scarlet);
-            SDL_Color bg = isScarlet
-                ? SDL_Color{180, 50, 50, 255}
-                : SDL_Color{80, 50, 180, 255};
+            SDL_Color bg;
+            const char* letter;
+            switch (availableGames_[i]) {
+                case GameVersion::Scarlet: bg = {180, 50, 50, 255}; letter = "S"; break;
+                case GameVersion::Violet:  bg = {80, 50, 180, 255}; letter = "V"; break;
+                case GameVersion::Sword:   bg = {50, 100, 180, 255}; letter = "Sw"; break;
+                case GameVersion::Shield:  bg = {180, 50, 100, 255}; letter = "Sh"; break;
+            }
             drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, bg);
-            drawTextCentered(isScarlet ? "S" : "V",
+            drawTextCentered(letter,
                 iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2, COLOR_TEXT, fontLarge_);
         }
 
-        const char* name = (availableGames_[i] == GameVersion::Scarlet) ? "Scarlet" : "Violet";
+        const char* name = gameDisplayNameOf(availableGames_[i]);
+        // Strip "Pokemon " prefix for card label
+        if (std::strncmp(name, "Pokemon ", 8) == 0) name += 8;
         drawTextCentered(name, cx + CARD_W / 2, cy + ICON_SIZE + 40, COLOR_TEXT, font_);
     }
 
@@ -723,7 +735,6 @@ void UI::selectGame(GameVersion game) {
 
     showWorking("Loading resources...");
 
-    // Load text data
 #ifdef __SWITCH__
     std::string dataDir = "romfs:/data/";
     std::string mapDir  = "romfs:/maps/";
@@ -732,6 +743,96 @@ void UI::selectGame(GameVersion game) {
     std::string mapDir  = "romfs/maps/";
 #endif
 
+    if (isSwSh(game)) {
+        // --- Sword / Shield save file path ---
+        speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
+
+        auto loadMap = [&](const char* name) -> SDL_Texture* {
+            std::string path = mapDir + name;
+            SDL_Surface* surf = IMG_Load(path.c_str());
+            if (!surf) return nullptr;
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
+            SDL_FreeSurface(surf);
+            return tex;
+        };
+        if (!mapWildArea_) mapWildArea_ = loadMap("wild_area.png");
+        if (!mapIoA_) mapIoA_ = loadMap("isle_of_armor.png");
+        if (!mapCT_) mapCT_ = loadMap("crown_tundra.png");
+
+        showWorking("Reading save file...");
+
+        std::string savePath;
+#ifdef __SWITCH__
+        if (selectedProfile_ >= 0) {
+            savePath = account_.mountSave(selectedProfile_, game);
+            if (savePath.empty()) {
+                showMessageAndWait("Error", "Failed to mount save data.");
+                return;
+            }
+            savePath += saveFileNameOf(game);
+        }
+#else
+        savePath = basePath_ + "main";
+#endif
+
+        if (!denCrawler_.readSave(savePath, game)) {
+            showMessageAndWait("Error", "Failed to read den data from save file.");
+#ifdef __SWITCH__
+            account_.unmountSave();
+#endif
+            return;
+        }
+
+#ifdef __SWITCH__
+        account_.unmountSave();
+#endif
+
+        liveMode_ = false;
+        swshTab_ = 0;
+        swshCursor_ = 0;
+        swshScroll_ = 0;
+        swshShowDetail_ = false;
+        rebuildSwShFilteredList();
+
+        // Enter SwSh view loop (reuses the same draw/input as live mode)
+        bool running = true;
+        while (running) {
+            if (showAbout_) {
+                SDL_Event event;
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) { running = false; break; }
+                    if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+                        if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
+                            event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
+                            showAbout_ = false;
+                    }
+                    if (event.type == SDL_KEYDOWN) {
+                        if (event.key.keysym.sym == SDLK_MINUS ||
+                            event.key.keysym.sym == SDLK_b ||
+                            event.key.keysym.sym == SDLK_ESCAPE)
+                            showAbout_ = false;
+                    }
+                }
+                drawSwShViewFrame();
+                drawAboutPopup();
+                SDL_RenderPresent(renderer_);
+                SDL_Delay(16);
+                continue;
+            }
+
+            handleSwShViewInput(running);
+            drawSwShViewFrame();
+            SDL_RenderPresent(renderer_);
+            SDL_Delay(16);
+        }
+
+        // Return to game selector
+        return;
+    }
+
+    // --- Scarlet / Violet save file path ---
+
+    // Load text data
     speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
     moveNames_    = TextData::loadLines(dataDir + "moves_en.txt");
     natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
@@ -1566,12 +1667,19 @@ void UI::drawSwShViewFrame() {
     // Title bar
     const char* gameName = gameDisplayNameOf(selectedVersion_);
     char title[128];
-    snprintf(title, sizeof(title), "pkTeraRaid - %s", gameName);
+    if (!liveMode_ && selectedProfile_ >= 0 && selectedProfile_ < (int)account_.profiles().size()) {
+        snprintf(title, sizeof(title), "pkTeraRaid - %s - %s", gameName,
+                 account_.profiles()[selectedProfile_].nickname.c_str());
+    } else {
+        snprintf(title, sizeof(title), "pkTeraRaid - %s", gameName);
+    }
     drawText(title, 10, 10, COLOR_TERA, font_);
 
-    int tw, th;
-    TTF_SizeUTF8(font_, "Live Mode", &tw, &th);
-    drawText("Live Mode", (SCREEN_W - tw) / 2, 10, COLOR_SHINY, font_);
+    if (liveMode_) {
+        int tw, th;
+        TTF_SizeUTF8(font_, "Live Mode", &tw, &th);
+        drawText("Live Mode", (SCREEN_W - tw) / 2, 10, COLOR_SHINY, font_);
+    }
 
     drawSwShMapPanel();
     drawSwShListPanel();
@@ -1581,9 +1689,12 @@ void UI::drawSwShViewFrame() {
         drawSwShDetailPopup(denCrawler_.dens()[idx]);
     }
 
-    std::string status = "Live Mode - ";
+    std::string status = liveMode_ ? "Live Mode - " : "Save File - ";
     status += gameName;
-    status += "  |  D-Pad:Navigate  A:Detail  L/R:Map Tab  -:About  +:Quit";
+    if (liveMode_)
+        status += "  |  D-Pad:Navigate  A:Detail  L/R:Map Tab  -:About  +:Quit";
+    else
+        status += "  |  D-Pad:Navigate  A:Detail  B:Back  L/R:Map Tab  -:About  +:Quit";
     drawStatusBar(status);
 }
 
@@ -2029,6 +2140,9 @@ void UI::handleSwShViewInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = detail
                     if (count > 0) swshShowDetail_ = true;
                     break;
+                case SDL_CONTROLLER_BUTTON_A: // Switch B = back (save mode only)
+                    if (!liveMode_) running = false;
+                    break;
                 case SDL_CONTROLLER_BUTTON_BACK:
                     showAbout_ = true; break;
                 case SDL_CONTROLLER_BUTTON_START:
@@ -2065,6 +2179,9 @@ void UI::handleSwShViewInput(bool& running) {
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true;
+                    break;
+                case SDLK_b:
+                    if (!liveMode_) running = false;
                     break;
                 case SDLK_ESCAPE:
                     running = false;

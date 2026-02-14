@@ -45,8 +45,8 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - Shiny prediction (up to 10,000 advances)
   - Location name
   - Full 64-bit seed
-- **Scrollable den list** with active dens filtered by region
-- **Detail popup** with full den information
+- **Den list** with scrollable list panel alongside the map
+- **Profile selector** with support for multiple Switch user profiles
 - **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
 ## Compatibility

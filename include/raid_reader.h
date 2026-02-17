@@ -4,6 +4,7 @@
 #include "raid_calc.h"
 #include "personal_table.h"
 #include "location_data.h"
+#include "reward_calc.h"
 #include "game_type.h"
 #include "swish_crypto.h"
 #include <vector>
@@ -17,6 +18,7 @@ struct RaidInfo {
     TeraRaidMapParent map;
     RaidContent content;
     int slotIndex;
+    std::vector<RewardItem> rewards;
 };
 
 class RaidReader {
@@ -44,6 +46,7 @@ private:
     EncounterTable kitakamiBlack_;
     EncounterTable blueberryStandard_;
     EncounterTable blueberryBlack_;
+    RewardCalc rewardCalc_;
 
     std::vector<RaidInfo> raids_;
     GameProgress progress_ = GameProgress::Beginning;

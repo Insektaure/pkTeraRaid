@@ -20,6 +20,8 @@ bool RaidReader::loadResources(const std::string& dir) {
     blueberryStandard_.loadFromFile(dir + "encounter_gem_blueberry_standard.pkl", personal_);
     blueberryBlack_.loadFromFile(dir + "encounter_gem_blueberry_black.pkl", personal_);
 
+    rewardCalc_.loadTables(dir + "reward_fixed.bin", dir + "reward_lottery.bin");
+
     return true;
 }
 
@@ -77,8 +79,8 @@ bool RaidReader::readLive([[maybe_unused]] GameVersion version) {
     std::vector<uint8_t> statusBuf(DmntPointers::KMyStatusSize);
     if (DmntMem::readBlock(DmntPointers::KMyStatus, DmntPointers::KMyStatusLen,
                            statusBuf.data(), statusBuf.size())) {
-        if (statusBuf.size() >= 8) {
-            const uint8_t* d = statusBuf.data() + 0x04;
+        if (statusBuf.size() >= 4) {
+            const uint8_t* d = statusBuf.data();
             id32_ = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
         }
     }
@@ -154,6 +156,12 @@ void RaidReader::processSlots(const std::vector<TeraRaidDetail>& slots,
         // Look up coordinates
         info.hasCoord = locations_.getCoord(map, slot.areaID, slot.lotteryGroup,
                                             slot.spawnPointID, info.coord);
+
+        // Calculate rewards
+        info.rewards = rewardCalc_.calculateRewards(
+            slot.seed, info.details.stars,
+            enc->fixedRewardHash, enc->lotteryRewardHash,
+            info.details.species, info.details.teraType);
 
         raids_.push_back(info);
     }

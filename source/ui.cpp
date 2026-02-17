@@ -794,6 +794,7 @@ void UI::selectGame(GameVersion game) {
         swshCursor_ = 0;
         swshScroll_ = 0;
         swshShowDetail_ = false;
+        swshShowAll_ = false;
         rebuildSwShFilteredList();
 
         // Enter SwSh view loop (reuses the same draw/input as live mode)
@@ -1611,6 +1612,7 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
     swshCursor_ = 0;
     swshScroll_ = 0;
     swshShowDetail_ = false;
+    swshShowAll_ = false;
     rebuildSwShFilteredList();
 
     bool running = true;
@@ -1657,7 +1659,7 @@ void UI::rebuildSwShFilteredList() {
     }
 
     for (int i = 0; i < (int)dens.size(); i++) {
-        if (dens[i].region == targetRegion && dens[i].isActive)
+        if (dens[i].region == targetRegion && (swshShowAll_ || dens[i].isActive))
             swshFiltered_.push_back(i);
     }
 
@@ -1699,9 +1701,9 @@ void UI::drawSwShViewFrame() {
     std::string status = liveMode_ ? "Live Mode - " : "Save File - ";
     status += gameName;
     if (liveMode_)
-        status += "  |  D-Pad:Navigate  A:Detail  L/R:Map Tab  -:About  +:Quit";
+        status += "  |  D-Pad:Navigate  A:Detail  X:Toggle  L/R:Map Tab  -:About  +:Quit";
     else
-        status += "  |  D-Pad:Navigate  A:Detail  B:Back  L/R:Map Tab  -:About  +:Quit";
+        status += "  |  D-Pad:Navigate  A:Detail  X:Toggle  B:Back  L/R:Map Tab  -:About  +:Quit";
     drawStatusBar(status);
 }
 
@@ -1848,7 +1850,8 @@ void UI::drawSwShListPanel() {
     int headerY = LIST_PANEL_Y + 5;
     const char* regionNames[] = {"Wild Area", "Isle of Armor", "Crown Tundra"};
     char header[64];
-    snprintf(header, sizeof(header), "Active Dens: %d  (%s)", count,
+    snprintf(header, sizeof(header), "%s: %d  (%s)",
+             swshShowAll_ ? "All Dens" : "Active Dens", count,
              regionNames[swshTab_]);
     drawText(header, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
 
@@ -1946,14 +1949,17 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
 
     // Species name
     std::string species;
+    SDL_Color speciesColor = textMain;
     if (den.isEvent) {
         species = "Event";
+        speciesColor = {180, 130, 220, 255};
     } else if (den.species > 0) {
         species = getSpeciesName(den.species);
     } else {
-        species = "???";
+        species = "Event";
+        speciesColor = {180, 130, 220, 255};
     }
-    drawText(species, textX + COL_SPECIES, line1Y, textMain, font_);
+    drawText(species, textX + COL_SPECIES, line1Y, speciesColor, font_);
 
     // Level (derived from star rating)
     if (!den.isEvent && den.species > 0) {
@@ -2070,13 +2076,14 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
     // Species name next to sprite
     int titleX = lx + DETAIL_SPRITE_SIZE + 12;
     std::string species;
-    if (den.isEvent)
+    SDL_Color speciesColor = COLOR_TEXT;
+    if (den.isEvent || den.species == 0) {
         species = "Event Den";
-    else if (den.species > 0)
+        speciesColor = {180, 130, 220, 255};
+    } else {
         species = getSpeciesName(den.species);
-    else
-        species = "Unknown";
-    drawText(species, titleX, y + 10, COLOR_TEXT, fontLarge_);
+    }
+    drawText(species, titleX, y + 10, speciesColor, fontLarge_);
 
     // Stars top-right
     std::string stars = getStarString(den.stars + 1);
@@ -2217,6 +2224,11 @@ void UI::handleSwShViewInput(bool& running) {
                 case SDL_CONTROLLER_BUTTON_B: // Switch A = detail
                     if (count > 0) swshShowDetail_ = true;
                     break;
+                case SDL_CONTROLLER_BUTTON_Y: // Switch X = toggle active/all
+                    swshShowAll_ = !swshShowAll_;
+                    swshCursor_ = 0; swshScroll_ = 0;
+                    rebuildSwShFilteredList();
+                    break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B = back (save mode only)
                     if (!liveMode_) running = false;
                     break;
@@ -2248,6 +2260,11 @@ void UI::handleSwShViewInput(bool& running) {
                     break;
                 case SDLK_e:
                     swshTab_ = (swshTab_ + 1) % 3;
+                    swshCursor_ = 0; swshScroll_ = 0;
+                    rebuildSwShFilteredList();
+                    break;
+                case SDLK_x:
+                    swshShowAll_ = !swshShowAll_;
                     swshCursor_ = 0; swshScroll_ = 0;
                     rebuildSwShFilteredList();
                     break;

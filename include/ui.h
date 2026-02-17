@@ -175,6 +175,7 @@ private:
     int swshCursor_ = 0;
     int swshScroll_ = 0;
     bool swshShowDetail_ = false;
+    bool swshShowAll_ = false;       // false=active dens only, true=all dens
     std::vector<int> swshFiltered_;  // indices into denCrawler_.dens()
 
     // SwSh map textures

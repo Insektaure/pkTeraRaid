@@ -99,12 +99,10 @@ bool DenCrawler::readRegionFromBuffer(SwShDenRegion region, const uint8_t* data,
         info.shinyType  = SwShShinyType::None;
         info.shinyAdvance = 0;
 
-        if (info.isActive) {
-            resolveEncounter(den, info.denIndex, info.species, info.flawlessIVs);
+        resolveEncounter(den, info.denIndex, info.species, info.flawlessIVs);
 
-            if (!info.isEvent) {
-                info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
-            }
+        if (!info.isActive || !info.isEvent) {
+            info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
         }
 
         dens_.push_back(info);
@@ -139,12 +137,10 @@ bool DenCrawler::readRegion(SwShDenRegion region, uint64_t heapOffset,
         info.shinyType  = SwShShinyType::None;
         info.shinyAdvance = 0;
 
-        if (info.isActive) {
-            resolveEncounter(den, info.denIndex, info.species, info.flawlessIVs);
+        resolveEncounter(den, info.denIndex, info.species, info.flawlessIVs);
 
-            if (!info.isEvent) {
-                info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
-            }
+        if (!info.isActive || !info.isEvent) {
+            info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
         }
 
         dens_.push_back(info);
@@ -158,12 +154,13 @@ bool DenCrawler::readRegion(SwShDenRegion region, uint64_t heapOffset,
 
 void DenCrawler::resolveEncounter(const SwShDenData& den, int globalIndex,
                                   uint16_t& outSpecies, uint8_t& outFlawlessIVs) const {
-    if (den.isEvent()) {
+    if (den.isActive() && den.isEvent()) {
         outSpecies = 0;
         outFlawlessIVs = 0;
         return;
     }
 
+    // Inactive dens always use normal (non-rare) nest table
     uint8_t nestId = SwShDenHashes::getNestId(globalIndex, den.isRare());
 
     const SwShDenEncounter* table;

@@ -2039,7 +2039,7 @@ void UI::drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected,
 }
 
 void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
-    constexpr int POP_W = 520, POP_H = 390;
+    constexpr int POP_W = 580, POP_H = 430;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -2053,7 +2053,7 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
 
     int y = py + 15;
     int lx = px + 20;
-    int rx = px + POP_W / 2 + 10;
+    int rx = px + 320;
     int lineH = 24;
 
     // Sprite
@@ -2140,42 +2140,48 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
     drawText(beamStr, lx + 85, ly, beamCol, fontSmall_);
     ly += lineH;
 
-    if (!den.isEvent) {
-        drawText("IVs:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
-        char ivBuf[16];
-        snprintf(ivBuf, sizeof(ivBuf), "%d Flawless", den.flawlessIVs);
-        drawText(ivBuf, lx + 85, ly, COLOR_TEXT, fontSmall_);
-        ly += lineH;
-    }
-
     drawText("Den #:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     char denBuf[16];
     snprintf(denBuf, sizeof(denBuf), "%d", den.denIndex);
     drawText(denBuf, lx + 85, ly, COLOR_TEXT, fontSmall_);
     ly += lineH;
 
-    // Right column
-    int ry = y;
-
-    drawText("Seed:", rx, ry, COLOR_TEXT_DIM, fontSmall_);
+    drawText("Seed:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     char seedBuf[24];
     snprintf(seedBuf, sizeof(seedBuf), "%016lX", den.seed);
-    drawText(seedBuf, rx + 50, ry, COLOR_TEXT, fontSmall_);
-    ry += lineH;
+    drawText(seedBuf, lx + 85, ly, COLOR_TEXT, fontSmall_);
+    ly += lineH;
 
-    drawText("Shiny:", rx, ry, COLOR_TEXT_DIM, fontSmall_);
+    drawText("Shiny:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     if (den.shinyType == SwShShinyType::Square) {
         char buf[32];
         snprintf(buf, sizeof(buf), "Square in %u", den.shinyAdvance);
-        drawText(buf, rx + 50, ry, COLOR_SHINY, fontSmall_);
+        drawText(buf, lx + 85, ly, COLOR_SHINY, fontSmall_);
     } else if (den.shinyType == SwShShinyType::Star) {
         char buf[32];
         snprintf(buf, sizeof(buf), "Star in %u", den.shinyAdvance);
-        drawText(buf, rx + 50, ry, COLOR_SHINY, fontSmall_);
+        drawText(buf, lx + 85, ly, COLOR_SHINY, fontSmall_);
     } else {
-        drawText("No nearby shiny", rx + 50, ry, COLOR_TEXT, fontSmall_);
+        drawText("No nearby shiny", lx + 85, ly, COLOR_TEXT, fontSmall_);
     }
-    ry += lineH;
+    ly += lineH;
+
+    // Right column — IVs only
+    int ry = y;
+
+    if (!den.isEvent && den.species > 0) {
+        drawText("IVs:", rx, ry, COLOR_TEXT_DIM, fontSmall_);
+        ry += lineH;
+
+        const char* statNames[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
+        for (int i = 0; i < 6; i++) {
+            char ivLine[32];
+            snprintf(ivLine, sizeof(ivLine), "%-4s %2d", statNames[i], den.ivs[i]);
+            SDL_Color col = (den.ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT;
+            drawText(ivLine, rx + 10, ry, col, fontSmall_);
+            ry += 18;
+        }
+    }
 
     // Close hint
     drawTextRight("B: Close", px + POP_W - 20, py + POP_H - 35, COLOR_TEXT_DIM, fontSmall_);

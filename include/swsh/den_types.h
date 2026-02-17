@@ -71,6 +71,7 @@ struct SwShDenInfo {
     bool          isEvent;
     uint16_t      species;        // National dex number, 0 if event/unresolved
     uint8_t       flawlessIVs;
+    int           ivs[6];         // HP, Atk, Def, SpA, SpD, Spe
     SwShShinyType shinyType;
     uint32_t      shinyAdvance;   // 0 = no shiny found within search range
 };

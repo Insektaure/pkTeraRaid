@@ -96,6 +96,7 @@ bool DenCrawler::readRegionFromBuffer(SwShDenRegion region, const uint8_t* data,
         info.isEvent    = den.isEvent();
         info.species    = 0;
         info.flawlessIVs = 0;
+        for (int j = 0; j < 6; j++) info.ivs[j] = 0;
         info.shinyType  = SwShShinyType::None;
         info.shinyAdvance = 0;
 
@@ -103,6 +104,26 @@ bool DenCrawler::readRegionFromBuffer(SwShDenRegion region, const uint8_t* data,
 
         if (!info.isActive || !info.isEvent) {
             info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
+        }
+
+        // Generate IVs from seed (RNG calls: EC, TID, PID, then IVs)
+        if (info.species > 0) {
+            Xoroshiro128Plus rng(info.seed);
+            rng.next();  // EC
+            rng.next();  // fake TID
+            rng.next();  // PID
+
+            for (int j = 0; j < 6; j++) info.ivs[j] = -1;
+            for (int j = 0; j < info.flawlessIVs; j++) {
+                int idx;
+                do { idx = (int)rng.nextInt(6); }
+                while (info.ivs[idx] != -1);
+                info.ivs[idx] = 31;
+            }
+            for (int j = 0; j < 6; j++) {
+                if (info.ivs[j] == -1)
+                    info.ivs[j] = (int)rng.nextInt(32);
+            }
         }
 
         dens_.push_back(info);
@@ -134,6 +155,7 @@ bool DenCrawler::readRegion(SwShDenRegion region, uint64_t heapOffset,
         info.isEvent    = den.isEvent();
         info.species    = 0;
         info.flawlessIVs = 0;
+        for (int j = 0; j < 6; j++) info.ivs[j] = 0;
         info.shinyType  = SwShShinyType::None;
         info.shinyAdvance = 0;
 
@@ -141,6 +163,26 @@ bool DenCrawler::readRegion(SwShDenRegion region, uint64_t heapOffset,
 
         if (!info.isActive || !info.isEvent) {
             info.shinyType = predictShiny(info.seed, 10000, info.shinyAdvance);
+        }
+
+        // Generate IVs from seed (RNG calls: EC, TID, PID, then IVs)
+        if (info.species > 0) {
+            Xoroshiro128Plus rng(info.seed);
+            rng.next();  // EC
+            rng.next();  // fake TID
+            rng.next();  // PID
+
+            for (int j = 0; j < 6; j++) info.ivs[j] = -1;
+            for (int j = 0; j < info.flawlessIVs; j++) {
+                int idx;
+                do { idx = (int)rng.nextInt(6); }
+                while (info.ivs[idx] != -1);
+                info.ivs[idx] = 31;
+            }
+            for (int j = 0; j < 6; j++) {
+                if (info.ivs[j] == -1)
+                    info.ivs[j] = (int)rng.nextInt(32);
+            }
         }
 
         dens_.push_back(info);

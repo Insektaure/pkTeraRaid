@@ -594,12 +594,18 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
 
     drawText("Shiny:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     if (den.shinyType == SwShShinyType::Square) {
-        char buf[32];
-        snprintf(buf, sizeof(buf), "Square in %u", den.shinyAdvance);
+        char buf[64];
+        if (den.shinyAdvance == 1)
+            snprintf(buf, sizeof(buf), "Square (current)");
+        else
+            snprintf(buf, sizeof(buf), "Square in %u (%u skips)", den.shinyAdvance, den.shinyAdvance - 1);
         drawText(buf, lx + 85, ly, COLOR_SHINY, fontSmall_);
     } else if (den.shinyType == SwShShinyType::Star) {
-        char buf[32];
-        snprintf(buf, sizeof(buf), "Star in %u", den.shinyAdvance);
+        char buf[64];
+        if (den.shinyAdvance == 1)
+            snprintf(buf, sizeof(buf), "Star (current)");
+        else
+            snprintf(buf, sizeof(buf), "Star in %u (%u skips)", den.shinyAdvance, den.shinyAdvance - 1);
         drawText(buf, lx + 85, ly, COLOR_SHINY, fontSmall_);
     } else {
         drawText("No nearby shiny", lx + 85, ly, COLOR_TEXT, fontSmall_);

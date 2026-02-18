@@ -108,6 +108,13 @@ private:
     bool showDetail_ = false;
     bool showAbout_  = false;
 
+    // SV filter state
+    enum class SvFilterPreset : uint8_t {
+        All = 0, Stars5Plus, Stars6, RareDrops, COUNT
+    };
+    SvFilterPreset svFilterPreset_ = SvFilterPreset::All;
+    bool svFilterShiny_ = false;
+
     // Layout constants for raid view
     // Map is rendered as a square using full available height
     static constexpr int MAP_PANEL_X = 5;

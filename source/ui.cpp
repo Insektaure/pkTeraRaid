@@ -348,6 +348,8 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
     raidCursor_ = 0;
     raidScroll_ = 0;
     showDetail_ = false;
+    svFilterPreset_ = SvFilterPreset::All;
+    svFilterShiny_ = false;
     rebuildFilteredList();
 
     screen_ = AppScreen::RaidView;
@@ -896,6 +898,8 @@ void UI::selectGame(GameVersion game) {
     raidCursor_ = 0;
     raidScroll_ = 0;
     showDetail_ = false;
+    svFilterPreset_ = SvFilterPreset::All;
+    svFilterShiny_ = false;
     rebuildFilteredList();
 
     screen_ = AppScreen::RaidView;
@@ -960,7 +964,7 @@ void UI::drawAboutPopup() {
     // Controls
     drawTextCentered("Controls", cx, y, COLOR_TERA, font_);
     y += 26;
-    drawTextCentered("D-Pad: Navigate    A: Details    B: Back    L/R: Map Tab    -: About    +: Quit", cx, y, COLOR_TEXT_DIM, fontSmall_);
+    drawTextCentered("D-Pad: Navigate  A: Details  B: Back  X: Filter  Y: Shiny  L/R: Map  +: Quit", cx, y, COLOR_TEXT_DIM, fontSmall_);
 
     // Footer
     drawTextCentered("Press - or B to close", cx, py + POP_H - 22, COLOR_TEXT_DIM, fontSmall_);

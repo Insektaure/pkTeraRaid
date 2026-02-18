@@ -5,12 +5,40 @@
 
 // --- SV Raid View ---
 
+// Rare item IDs: Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap
+static bool isRareItem(uint16_t id) {
+    return (id >= 1904 && id <= 1908) || id == 1606 || id == 645 || id == 795 || id == 796;
+}
+
 void UI::rebuildFilteredList() {
     filteredIndices_.clear();
     auto& raids = reader_.raids();
     for (int i = 0; i < (int)raids.size(); i++) {
-        if (raids[i].map == currentMap_)
-            filteredIndices_.push_back(i);
+        if (raids[i].map != currentMap_)
+            continue;
+
+        if (svFilterShiny_ && raids[i].details.shiny == TeraShiny::No)
+            continue;
+
+        switch (svFilterPreset_) {
+            case SvFilterPreset::Stars5Plus:
+                if (raids[i].details.stars < 5) continue;
+                break;
+            case SvFilterPreset::Stars6:
+                if (raids[i].details.stars != 6) continue;
+                break;
+            case SvFilterPreset::RareDrops: {
+                bool hasRare = false;
+                for (auto& r : raids[i].rewards) {
+                    if (isRareItem(r.itemId)) { hasRare = true; break; }
+                }
+                if (!hasRare) continue;
+                break;
+            }
+            default: break;
+        }
+
+        filteredIndices_.push_back(i);
     }
     if (raidCursor_ >= (int)filteredIndices_.size())
         raidCursor_ = std::max(0, (int)filteredIndices_.size() - 1);
@@ -178,9 +206,28 @@ void UI::drawListPanel() {
     for (int fi : filteredIndices_) {
         if (raids[fi].details.shiny != TeraShiny::No) shinyCount++;
     }
-    char header[96];
-    snprintf(header, sizeof(header), "Raids: %d - Shiny: %d", count, shinyCount);
-    drawText(header, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
+
+    std::string headerStr = "Raids: " + std::to_string(count);
+    if (!svFilterShiny_)
+        headerStr += " - Shiny: " + std::to_string(shinyCount);
+    drawText(headerStr, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
+
+    // Filter tags (centered, colored when active)
+    bool hasFilter = svFilterShiny_ || svFilterPreset_ != SvFilterPreset::All;
+    if (hasFilter) {
+        std::string filterStr;
+        if (svFilterShiny_) filterStr += "[Shiny]";
+        switch (svFilterPreset_) {
+            case SvFilterPreset::Stars5Plus: filterStr += (filterStr.empty() ? "" : " ") + std::string("[5+ Stars]"); break;
+            case SvFilterPreset::Stars6:     filterStr += (filterStr.empty() ? "" : " ") + std::string("[6 Stars]"); break;
+            case SvFilterPreset::RareDrops:  filterStr += (filterStr.empty() ? "" : " ") + std::string("[Rare Rewards]"); break;
+            default: break;
+        }
+        int tw = 0, th = 0;
+        TTF_SizeUTF8(fontSmall_, filterStr.c_str(), &tw, &th);
+        int fx = LIST_PANEL_X + (LIST_PANEL_W - tw) / 2;
+        drawText(filterStr, fx, headerY, COLOR_SHINY, fontSmall_);
+    }
 
     // Trainer info
     char tidBuf[32];
@@ -189,6 +236,12 @@ void UI::drawListPanel() {
 
     int listY = LIST_PANEL_Y + 28;
     int listH = LIST_PANEL_H - 28;
+
+    if (count == 0) {
+        drawTextCentered("No matching raids", LIST_PANEL_X + LIST_PANEL_W / 2,
+                         LIST_PANEL_Y + LIST_PANEL_H / 2, COLOR_TEXT_DIM, font_);
+        return;
+    }
 
     // Compute row height to fill the panel exactly (no bottom gap)
     // Aim for ~10 visible rows, minimum 50px per row
@@ -360,10 +413,10 @@ void UI::drawRaidViewFrame() {
     if (liveMode_) {
         std::string liveStatus = "Live Mode - ";
         liveStatus += gameDisplayNameOf(selectedVersion_);
-        liveStatus += "  |  D-Pad:Navigate  A:Detail  L/R:Map Tab  -:About  +:Quit";
+        liveStatus += "  |  D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit";
         drawStatusBar(liveStatus);
     } else {
-        drawStatusBar("D-Pad:Navigate  A:Detail  B:Back  L/R:Map Tab  -:About  +:Quit");
+        drawStatusBar("D-Pad:Nav  A:Detail  B:Back  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit");
     }
 }
 
@@ -512,11 +565,6 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
 
     int maxRewardY = py + POP_H - 65;
 
-    // Rare item IDs: Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap
-    auto isRareItem = [](uint16_t id) -> bool {
-        return (id >= 1904 && id <= 1908) || id == 1606 || id == 645 || id == 795 || id == 796;
-    };
-
     // Split into shared, host-only, joiner-only
     struct DisplayItem { std::string name; bool rare; };
     std::vector<DisplayItem> sharedItems, hostItems, joinerItems;
@@ -650,6 +698,18 @@ void UI::handleRaidViewInput(bool& running) {
                     if (!liveMode_)
                         screen_ = AppScreen::GameSelector;
                     break;
+                case SDL_CONTROLLER_BUTTON_Y: { // Switch X = cycle filter preset
+                    svFilterPreset_ = (SvFilterPreset)(((int)svFilterPreset_ + 1) % (int)SvFilterPreset::COUNT);
+                    raidCursor_ = 0; raidScroll_ = 0;
+                    rebuildFilteredList();
+                    break;
+                }
+                case SDL_CONTROLLER_BUTTON_X: { // Switch Y = toggle shiny filter
+                    svFilterShiny_ = !svFilterShiny_;
+                    raidCursor_ = 0; raidScroll_ = 0;
+                    rebuildFilteredList();
+                    break;
+                }
                 case SDL_CONTROLLER_BUTTON_BACK: // - = about
                     showAbout_ = true; break;
                 case SDL_CONTROLLER_BUTTON_START:
@@ -688,6 +748,17 @@ void UI::handleRaidViewInput(bool& running) {
                 }
                 case SDLK_a: case SDLK_RETURN:
                     if (count > 0) showDetail_ = true;
+                    break;
+                case SDLK_y: { // cycle filter preset
+                    svFilterPreset_ = (SvFilterPreset)(((int)svFilterPreset_ + 1) % (int)SvFilterPreset::COUNT);
+                    raidCursor_ = 0; raidScroll_ = 0;
+                    rebuildFilteredList();
+                    break;
+                }
+                case SDLK_x: // toggle shiny filter
+                    svFilterShiny_ = !svFilterShiny_;
+                    raidCursor_ = 0; raidScroll_ = 0;
+                    rebuildFilteredList();
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true; break;

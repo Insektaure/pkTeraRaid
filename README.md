@@ -24,6 +24,10 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - PID and EC
   - **Reward preview** — calculated item drops from the raid seed, split by Host / Joiner / Everyone. Rare drops (Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap) are highlighted in gold
 - **Raid list** with scrollable list panel alongside the map, showing shiny count per region
+- **Raid filters** — composable filters to quickly find interesting raids:
+  - **X button**: Cycle preset filter (All → 5+ Stars → 6 Stars → Rare Rewards)
+  - **Y button**: Toggle shiny-only filter
+  - Filters combine freely (e.g., Shiny + Rare Rewards) and active filters are highlighted in the header
 - **Profile selector** with support for multiple Switch user profiles
 - **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
@@ -69,7 +73,8 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
 |--------|--------|
 | D-Pad / Left Stick | Navigate |
 | A | Select / View details |
-| X | Toggle active/all dens (SwSh) |
+| X | Cycle filter preset (SV) / Toggle active/all dens (SwSh) |
+| Y | Toggle shiny filter (SV) |
 | B | Back / Close details |
 | L / R | Switch map tab |
 | - | About |

@@ -7,6 +7,10 @@ EncounterTeraTF9 EncounterTeraTF9::readFrom(const uint8_t* data, uint8_t persona
     auto r16 = [](const uint8_t* p) -> uint16_t { return p[0] | (p[1] << 8); };
     auto r16s = [](const uint8_t* p) -> int16_t { return (int16_t)(p[0] | (p[1] << 8)); };
     auto r32 = [](const uint8_t* p) -> uint32_t { return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24); };
+    auto r64 = [](const uint8_t* p) -> uint64_t {
+        return (uint64_t)p[0] | ((uint64_t)p[1] << 8) | ((uint64_t)p[2] << 16) | ((uint64_t)p[3] << 24)
+             | ((uint64_t)p[4] << 32) | ((uint64_t)p[5] << 40) | ((uint64_t)p[6] << 48) | ((uint64_t)p[7] << 56);
+    };
 
     EncounterTeraTF9 e;
     e.species           = r16(data + 0x00);
@@ -32,6 +36,8 @@ EncounterTeraTF9 EncounterTeraTF9::readFrom(const uint8_t* data, uint8_t persona
     e.randRateMinScarlet = r16s(data + 0x14);
     e.randRateMinViolet  = r16s(data + 0x16);
     e.identifier        = r32(data + 0x18);
+    e.fixedRewardHash   = r64(data + 0x1C);
+    e.lotteryRewardHash = r64(data + 0x24);
     e.extraMoves[0]     = r16(data + 0x30);
     e.extraMoves[1]     = r16(data + 0x32);
     e.extraMoves[2]     = r16(data + 0x34);

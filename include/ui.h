@@ -89,6 +89,7 @@ private:
     std::vector<std::string> natureNames_;
     std::vector<std::string> abilityNames_;
     std::vector<std::string> typeNames_;
+    std::vector<std::string> itemNames_;
 
     // Sprite cache: species ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
@@ -163,6 +164,7 @@ private:
     std::string getNatureName(uint8_t nature) const;
     std::string getAbilityName(int ability) const;
     std::string getTypeName(uint8_t type) const;
+    std::string getItemName(uint16_t itemId) const;
     std::string getStarString(uint8_t stars) const;
     SDL_Color getTypeColor(uint8_t type) const;
 

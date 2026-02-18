@@ -68,6 +68,8 @@ struct EncounterTeraTF9 {
     int16_t randRateMinScarlet;
     int16_t randRateMinViolet;
     uint32_t identifier;
+    uint64_t fixedRewardHash;
+    uint64_t lotteryRewardHash;
     uint16_t extraMoves[6];
     uint8_t genderRatio;   // from PersonalInfo
 

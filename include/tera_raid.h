@@ -165,8 +165,8 @@ inline GameProgress getGameProgress(const std::vector<SCBlock>& blocks) {
 inline uint32_t getTrainerID32(const std::vector<SCBlock>& blocks) {
     const SCBlock* b = SwishCrypto::findBlock(blocks, RaidBlockKeys::KMyStatus);
     if (b && b->data.size() >= 8) {
-        // ID32 is at offset 0x04 in MyStatus (u16 TID + u16 SID packed as u32)
-        const uint8_t* d = b->data.data() + 0x04;
+        // ID32 is at offset 0x00 in MyStatus (u16 TID + u16 SID packed as u32)
+        const uint8_t* d = b->data.data();
         return d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
     }
     return 0;

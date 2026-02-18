@@ -315,6 +315,7 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
     natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
     abilityNames_ = TextData::loadLines(dataDir + "abilities_en.txt");
     typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+    itemNames_    = TextData::loadLines(dataDir + "items_en.txt");
 
     if (!reader_.loadResources(dataDir)) {
         showMessageAndWait("Error", "Failed to load encounter data.");
@@ -841,6 +842,7 @@ void UI::selectGame(GameVersion game) {
     natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
     abilityNames_ = TextData::loadLines(dataDir + "abilities_en.txt");
     typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+    itemNames_    = TextData::loadLines(dataDir + "items_en.txt");
 
     if (!reader_.loadResources(dataDir)) {
         showMessageAndWait("Error", "Failed to load encounter data.");
@@ -1108,6 +1110,14 @@ std::string UI::getTypeName(uint8_t type) const {
         return typeNames_[type];
     char buf[16];
     snprintf(buf, sizeof(buf), "Type %u", type);
+    return buf;
+}
+
+std::string UI::getItemName(uint16_t itemId) const {
+    if (itemId < itemNames_.size() && !itemNames_[itemId].empty())
+        return itemNames_[itemId];
+    char buf[16];
+    snprintf(buf, sizeof(buf), "Item %u", itemId);
     return buf;
 }
 

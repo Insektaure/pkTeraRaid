@@ -174,8 +174,12 @@ void UI::drawListPanel() {
 
     // Header
     int headerY = LIST_PANEL_Y + 5;
-    char header[64];
-    snprintf(header, sizeof(header), "Raids: %d", count);
+    int shinyCount = 0;
+    for (int fi : filteredIndices_) {
+        if (raids[fi].details.shiny != TeraShiny::No) shinyCount++;
+    }
+    char header[96];
+    snprintf(header, sizeof(header), "Raids: %d - Shiny: %d", count, shinyCount);
     drawText(header, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
 
     // Trainer info
@@ -364,7 +368,7 @@ void UI::drawRaidViewFrame() {
 }
 
 void UI::drawDetailPopup(const RaidInfo& raid) {
-    constexpr int POP_W = 620, POP_H = 420;
+    constexpr int POP_W = 880, POP_H = 460;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -378,7 +382,8 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
 
     int y = py + 15;
     int lx = px + 20;
-    int rx = px + POP_W / 2 + 10;
+    int mx = px + 270;   // middle column (IVs + Moves)
+    int rwx = px + 530;  // right column (Rewards)
     int lineH = 24;
 
     // Sprite in top-left (fit to box, preserve aspect ratio)
@@ -413,7 +418,7 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
     SDL_RenderDrawLine(renderer_, lx, y, px + POP_W - 20, y);
     y += 10;
 
-    // Left column
+    // Left column: stats
     int ly = y;
     drawText("Tera Type:", lx, ly, COLOR_TEXT_DIM, fontSmall_);
     drawText(getTypeName(raid.details.teraType), lx + 85, ly, getTypeColor(raid.details.teraType), fontSmall_);
@@ -452,9 +457,9 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
         drawText("No", lx + 85, ly, COLOR_TEXT, fontSmall_);
     ly += lineH;
 
-    // Right column
+    // Middle column: IVs + Moves
     int ry = y;
-    drawText("IVs:", rx, ry, COLOR_TEXT_DIM, fontSmall_);
+    drawText("IVs:", mx, ry, COLOR_TEXT_DIM, fontSmall_);
     ry += lineH;
 
     const char* statNames[] = {"HP", "Atk", "Def", "SpA", "SpD", "Spe"};
@@ -462,18 +467,113 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
         char ivLine[32];
         snprintf(ivLine, sizeof(ivLine), "%-4s %2d", statNames[i], raid.details.ivs[i]);
         SDL_Color col = (raid.details.ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT;
-        drawText(ivLine, rx + 10, ry, col, fontSmall_);
+        drawText(ivLine, mx + 10, ry, col, fontSmall_);
         ry += 18;
     }
 
     ry += 6;
-    drawText("Moves:", rx, ry, COLOR_TEXT_DIM, fontSmall_);
+    drawText("Moves:", mx, ry, COLOR_TEXT_DIM, fontSmall_);
     ry += lineH;
     for (int i = 0; i < 4; i++) {
         if (raid.details.moves[i] > 0) {
-            drawText(getMoveName(raid.details.moves[i]), rx + 10, ry, COLOR_TEXT, fontSmall_);
+            drawText(getMoveName(raid.details.moves[i]), mx + 10, ry, COLOR_TEXT, fontSmall_);
             ry += 18;
         }
+    }
+
+    // Right column: Rewards
+    // Aggregate separately for host (subjectType 0+2) and joiner (1+2)
+    struct AggItem { uint16_t id; int hostTotal; int joinerTotal; };
+    std::vector<AggItem> aggRewards;
+    auto addToAgg = [&](uint16_t id, uint8_t amount, bool isHost, bool isJoiner) {
+        for (auto& a : aggRewards) {
+            if (a.id == id) {
+                if (isHost) a.hostTotal += amount;
+                if (isJoiner) a.joinerTotal += amount;
+                return;
+            }
+        }
+        aggRewards.push_back({id,
+            isHost ? (int)amount : 0,
+            isJoiner ? (int)amount : 0});
+    };
+    for (auto& r : raid.rewards) {
+        if (r.itemId == 0) continue;
+        bool host   = (r.subjectType == 0 || r.subjectType == 2);
+        bool joiner = (r.subjectType == 1 || r.subjectType == 2);
+        addToAgg(r.itemId, r.amount, host, joiner);
+    }
+
+    int rwy = y;
+
+    // Vertical separator before rewards column
+    SDL_SetRenderDrawColor(renderer_, 70, 70, 90, 255);
+    SDL_RenderDrawLine(renderer_, rwx - 12, y - 4, rwx - 12, py + POP_H - 65);
+
+    int maxRewardY = py + POP_H - 65;
+
+    // Split into shared, host-only, joiner-only
+    struct DisplayItem { std::string name; int count; };
+    std::vector<DisplayItem> sharedItems, hostItems, joinerItems;
+    for (auto& a : aggRewards) {
+        std::string name = getItemName(a.id);
+        if (a.hostTotal == a.joinerTotal) {
+            std::string line = name;
+            if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
+            sharedItems.push_back({line, a.hostTotal});
+        } else {
+            if (a.hostTotal > 0) {
+                std::string line = name;
+                if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
+                hostItems.push_back({line, a.hostTotal});
+            }
+            if (a.joinerTotal > 0) {
+                std::string line = name;
+                if (a.joinerTotal > 1) line += " x" + std::to_string(a.joinerTotal);
+                joinerItems.push_back({line, a.joinerTotal});
+            }
+        }
+    }
+
+    if (aggRewards.empty()) {
+        drawText("Rewards:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
+        rwy += lineH;
+        drawText("None", rwx + 10, rwy, COLOR_TEXT_DIM, fontSmall_);
+    } else {
+        // Shared rewards (no label needed if no host/joiner differences)
+        bool hasDiff = !hostItems.empty() || !joinerItems.empty();
+        if (!sharedItems.empty()) {
+            drawText("Rewards:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
+            rwy += lineH;
+            for (auto& item : sharedItems) {
+                if (rwy > maxRewardY) break;
+                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                rwy += 18;
+            }
+        }
+        if (!hostItems.empty()) {
+            if (rwy > maxRewardY) goto rewardsDone;
+            rwy += 4;
+            drawText("Host:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
+            rwy += lineH;
+            for (auto& item : hostItems) {
+                if (rwy > maxRewardY) break;
+                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                rwy += 18;
+            }
+        }
+        if (!joinerItems.empty()) {
+            if (rwy > maxRewardY) goto rewardsDone;
+            rwy += 4;
+            drawText("Joiner:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
+            rwy += lineH;
+            for (auto& item : joinerItems) {
+                if (rwy > maxRewardY) break;
+                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                rwy += 18;
+            }
+        }
+        rewardsDone:;
     }
 
     // Seed at bottom

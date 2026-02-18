@@ -368,7 +368,7 @@ void UI::drawRaidViewFrame() {
 }
 
 void UI::drawDetailPopup(const RaidInfo& raid) {
-    constexpr int POP_W = 880, POP_H = 460;
+    constexpr int POP_W = 880, POP_H = 580;
     int px = (SCREEN_W - POP_W) / 2;
     int py = (SCREEN_H - POP_H) / 2;
 
@@ -514,7 +514,7 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
 
     // Rare item IDs: Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap
     auto isRareItem = [](uint16_t id) -> bool {
-        return (id >= 1904 && id <= 1908) || id == 1606 || id == 795 || id == 796 || id == 1253;
+        return (id >= 1904 && id <= 1908) || id == 1606 || id == 645 || id == 795 || id == 796;
     };
 
     // Split into shared, host-only, joiner-only
@@ -541,16 +541,18 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
         }
     }
 
+    drawText("Rewards:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
+    rwy += lineH;
+
     if (aggRewards.empty()) {
-        drawText("Rewards:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
-        rwy += lineH;
         drawText("None", rwx + 10, rwy, COLOR_TEXT_DIM, fontSmall_);
     } else {
-        // Shared rewards (no label needed if no host/joiner differences)
-        bool hasDiff = !hostItems.empty() || !joinerItems.empty();
+        bool hasSections = !hostItems.empty() || !joinerItems.empty();
         if (!sharedItems.empty()) {
-            drawText("Rewards:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
-            rwy += lineH;
+            if (hasSections) {
+                drawText("Everyone:", rwx + 5, rwy, COLOR_TEXT_DIM, fontTiny_);
+                rwy += 16;
+            }
             for (auto& item : sharedItems) {
                 if (rwy > maxRewardY) break;
                 drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);
@@ -559,9 +561,9 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
         }
         if (!hostItems.empty()) {
             if (rwy > maxRewardY) goto rewardsDone;
-            rwy += 4;
-            drawText("Host:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
-            rwy += lineH;
+            rwy += 2;
+            drawText("Host:", rwx + 5, rwy, COLOR_TEXT_DIM, fontTiny_);
+            rwy += 16;
             for (auto& item : hostItems) {
                 if (rwy > maxRewardY) break;
                 drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);
@@ -570,9 +572,9 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
         }
         if (!joinerItems.empty()) {
             if (rwy > maxRewardY) goto rewardsDone;
-            rwy += 4;
-            drawText("Joiner:", rwx, rwy, COLOR_TEXT_DIM, fontSmall_);
-            rwy += lineH;
+            rwy += 2;
+            drawText("Joiner:", rwx + 5, rwy, COLOR_TEXT_DIM, fontTiny_);
+            rwy += 16;
             for (auto& item : joinerItems) {
                 if (rwy > maxRewardY) break;
                 drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);

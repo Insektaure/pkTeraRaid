@@ -22,7 +22,8 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - Shiny status
   - Gender
   - PID and EC
-- **Raid list** with scrollable list panel alongside the map
+  - **Reward preview** — calculated item drops from the raid seed, split by Host / Joiner / Everyone. Rare drops (Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap) are highlighted in gold
+- **Raid list** with scrollable list panel alongside the map, showing shiny count per region
 - **Profile selector** with support for multiple Switch user profiles
 - **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
@@ -125,7 +126,7 @@ make clean
 
 - [PKHeX](https://github.com/kwsch/PKHeX) by kwsch - Save file structure and Pokemon data
 - [Tera-Finder](https://github.com/Manu098vm/Tera-Finder) by Manu098vm - Raid encounter logic and data resources
-- [RaidCrawler](https://github.com/LegoFigure11/RaidCrawler) by LegoFigure11 - Map coordinate formulas
+- [RaidCrawler](https://github.com/LegoFigure11/RaidCrawler) by LegoFigure11 - Map coordinate formulas and reward table data
 - [CaptureSight](https://github.com/zaksabeast/CaptureSight) by zaksabeast - SwSh den data structures and encounter tables
 - [PKHeX Raid Plugin](https://github.com/architPokemon/PKHeX_Raid_Plugin) - SwSh den map coordinates and location data
 - [JKSV](https://github.com/J-D-K/JKSV) by J-D-K - Save data access approach

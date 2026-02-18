@@ -512,25 +512,31 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
 
     int maxRewardY = py + POP_H - 65;
 
+    // Rare item IDs: Herba Mystica, Ability Patch, Ability Capsule, Bottle Cap, Gold Bottle Cap
+    auto isRareItem = [](uint16_t id) -> bool {
+        return (id >= 1904 && id <= 1908) || id == 1606 || id == 795 || id == 796 || id == 1253;
+    };
+
     // Split into shared, host-only, joiner-only
-    struct DisplayItem { std::string name; int count; };
+    struct DisplayItem { std::string name; bool rare; };
     std::vector<DisplayItem> sharedItems, hostItems, joinerItems;
     for (auto& a : aggRewards) {
         std::string name = getItemName(a.id);
+        bool rare = isRareItem(a.id);
         if (a.hostTotal == a.joinerTotal) {
             std::string line = name;
             if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
-            sharedItems.push_back({line, a.hostTotal});
+            sharedItems.push_back({line, rare});
         } else {
             if (a.hostTotal > 0) {
                 std::string line = name;
                 if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
-                hostItems.push_back({line, a.hostTotal});
+                hostItems.push_back({line, rare});
             }
             if (a.joinerTotal > 0) {
                 std::string line = name;
                 if (a.joinerTotal > 1) line += " x" + std::to_string(a.joinerTotal);
-                joinerItems.push_back({line, a.joinerTotal});
+                joinerItems.push_back({line, rare});
             }
         }
     }
@@ -547,7 +553,7 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
             rwy += lineH;
             for (auto& item : sharedItems) {
                 if (rwy > maxRewardY) break;
-                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);
                 rwy += 18;
             }
         }
@@ -558,7 +564,7 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
             rwy += lineH;
             for (auto& item : hostItems) {
                 if (rwy > maxRewardY) break;
-                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);
                 rwy += 18;
             }
         }
@@ -569,7 +575,7 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
             rwy += lineH;
             for (auto& item : joinerItems) {
                 if (rwy > maxRewardY) break;
-                drawText(item.name, rwx + 10, rwy, COLOR_TEXT, fontSmall_);
+                drawText(item.name, rwx + 10, rwy, item.rare ? COLOR_SHINY : COLOR_TEXT, fontSmall_);
                 rwy += 18;
             }
         }

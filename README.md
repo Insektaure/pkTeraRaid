@@ -17,7 +17,7 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - Species with sprite preview
   - Star rating (1-6 stars, including 6-star black raids)
   - Tera type (with color-coded display)
-  - IVs, Nature, Ability
+  - IVs (color-coded: gold for 31, red for 0), Nature, Ability
   - Moves
   - Shiny status
   - Gender
@@ -47,7 +47,8 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
   - Pokemon types (with color-coded display)
   - Beam type (Normal / Rare / Event)
   - Flawless IVs
-  - Shiny prediction (up to 10,000 advances)
+  - IVs (color-coded: gold for 31, red for 0)
+  - Shiny prediction (up to 10,000 advances) with skip count in detail view
   - Location name
   - Full 64-bit seed
 - **Active/All dens toggle** — press X to switch between showing only active dens or all dens (including inactive ones) with their predicted encounters and shiny info

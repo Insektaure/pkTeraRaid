@@ -519,7 +519,8 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
     for (int i = 0; i < 6; i++) {
         char ivLine[32];
         snprintf(ivLine, sizeof(ivLine), "%-4s %2d", statNames[i], raid.details.ivs[i]);
-        SDL_Color col = (raid.details.ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT;
+        SDL_Color col = (raid.details.ivs[i] == 31) ? COLOR_SHINY :
+                        (raid.details.ivs[i] == 0)  ? COLOR_RED   : COLOR_TEXT;
         drawText(ivLine, mx + 10, ry, col, fontSmall_);
         ry += 18;
     }

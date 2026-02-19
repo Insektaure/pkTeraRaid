@@ -623,7 +623,8 @@ void UI::drawSwShDetailPopup(const SwShDenInfo& den) {
         for (int i = 0; i < 6; i++) {
             char ivLine[32];
             snprintf(ivLine, sizeof(ivLine), "%-4s %2d", statNames[i], den.ivs[i]);
-            SDL_Color col = (den.ivs[i] == 31) ? COLOR_SHINY : COLOR_TEXT;
+            SDL_Color col = (den.ivs[i] == 31) ? COLOR_SHINY :
+                            (den.ivs[i] == 0)  ? COLOR_RED   : COLOR_TEXT;
             drawText(ivLine, rx + 10, ry, col, fontSmall_);
             ry += 18;
         }

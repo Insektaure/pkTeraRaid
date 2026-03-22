@@ -146,9 +146,9 @@ void UI::drawSwShViewFrame() {
     char modeLabel[64];
     snprintf(modeLabel, sizeof(modeLabel), "%s - %s", liveMode_ ? "Live Mode" : "Save File", gameName);
     if (liveMode_)
-        drawStatusBar("D-Pad:Navigate  A:Detail  X:Toggle  L/R:Map Tab  -:About  +:Quit", modeLabel);
+        drawStatusBar("D-Pad: Navigate  A: Detail  X: Toggle  L/R: Map Tab  -: About  +: Quit", modeLabel);
     else
-        drawStatusBar("D-Pad:Navigate  A:Detail  X:Toggle  B:Back  L/R:Map Tab  -:About  +:Quit", modeLabel);
+        drawStatusBar("D-Pad: Navigate  A: Detail  X: Toggle  B: Back  L/R: Map Tab  -: About  +: Quit", modeLabel);
 }
 
 void UI::drawSwShMapPanel() {

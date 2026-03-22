@@ -435,7 +435,7 @@ void UI::drawProfileSelectorFrame() {
         drawTextCentered(name, cx + CARD_W / 2, cy + ICON_SIZE + 24, COLOR_TEXT, fontSmall_);
     }
 
-    drawStatusBar("A:Select  -:About  +:Quit");
+    drawStatusBar("A: Select  -: About  +: Quit");
 }
 
 void UI::handleProfileSelectorInput(bool& running) {
@@ -661,9 +661,9 @@ void UI::drawGameSelectorFrame() {
     }
 
     if (selectedProfile_ >= 0) {
-        drawStatusBar("A:Select  B:Back  -:About  +:Quit");
+        drawStatusBar("A: Select  B: Back  -: About  +: Quit");
     } else {
-        drawStatusBar("A:Select  -:About  +:Quit");
+        drawStatusBar("A: Select  -: About  +: Quit");
     }
 }
 

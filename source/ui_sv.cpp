@@ -426,11 +426,11 @@ void UI::drawRaidViewFrame() {
     if (liveMode_) {
         char modeLabel[64];
         snprintf(modeLabel, sizeof(modeLabel), "Live Mode - %s", gameDisplayNameOf(selectedVersion_));
-        drawStatusBar("D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  A: Detail  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
     } else {
         char modeLabel[64];
         snprintf(modeLabel, sizeof(modeLabel), "Save File - %s", gameDisplayNameOf(selectedVersion_));
-        drawStatusBar("D-Pad:Nav  A:Detail  B:Back  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  A: Detail  B: Back  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
     }
 }
 

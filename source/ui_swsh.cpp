@@ -143,13 +143,12 @@ void UI::drawSwShViewFrame() {
         drawSwShDetailPopup(denCrawler_.dens()[idx]);
     }
 
-    std::string status = liveMode_ ? "Live Mode - " : "Save File - ";
-    status += gameName;
+    char modeLabel[64];
+    snprintf(modeLabel, sizeof(modeLabel), "%s - %s", liveMode_ ? "Live Mode" : "Save File", gameName);
     if (liveMode_)
-        status += "  |  D-Pad:Navigate  A:Detail  X:Toggle  L/R:Map Tab  -:About  +:Quit";
+        drawStatusBar("D-Pad:Navigate  A:Detail  X:Toggle  L/R:Map Tab  -:About  +:Quit", modeLabel);
     else
-        status += "  |  D-Pad:Navigate  A:Detail  X:Toggle  B:Back  L/R:Map Tab  -:About  +:Quit";
-    drawStatusBar(status);
+        drawStatusBar("D-Pad:Navigate  A:Detail  X:Toggle  B:Back  L/R:Map Tab  -:About  +:Quit", modeLabel);
 }
 
 void UI::drawSwShMapPanel() {

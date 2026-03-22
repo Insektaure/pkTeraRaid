@@ -424,13 +424,13 @@ void UI::drawRaidViewFrame() {
     }
 
     if (liveMode_) {
-        char liveStatus[256];
-        snprintf(liveStatus, sizeof(liveStatus),
-            "Live Mode - %s  |  D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit",
-            gameDisplayNameOf(selectedVersion_));
-        drawStatusBar(liveStatus);
+        char modeLabel[64];
+        snprintf(modeLabel, sizeof(modeLabel), "Live Mode - %s", gameDisplayNameOf(selectedVersion_));
+        drawStatusBar("D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit", modeLabel);
     } else {
-        drawStatusBar("D-Pad:Nav  A:Detail  B:Back  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit");
+        char modeLabel[64];
+        snprintf(modeLabel, sizeof(modeLabel), "Save File - %s", gameDisplayNameOf(selectedVersion_));
+        drawStatusBar("D-Pad:Nav  A:Detail  B:Back  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit", modeLabel);
     }
 }
 

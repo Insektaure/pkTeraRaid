@@ -193,7 +193,7 @@ private:
     void drawTextRight(const std::string& text, int rx, int y, SDL_Color color, TTF_Font* f);
     void drawRect(int x, int y, int w, int h, SDL_Color color);
     void drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickness);
-    void drawStatusBar(const std::string& msg);
+    void drawStatusBar(const std::string& msg, const std::string& rightLabel = "");
     void fillCircle(int cx, int cy, int r, SDL_Color color);
 
     // Name lookups

@@ -693,6 +693,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     gameSelCursor_ = (gameSelCursor_ + 1) % numGames; break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A
                     selectGame(availableGames_[gameSelCursor_]);
+                    markDirty();
                     break;
                 case SDL_CONTROLLER_BUTTON_A: // Switch B = back
                     if (selectedProfile_ >= 0) {
@@ -716,6 +717,7 @@ void UI::handleGameSelectorInput(bool& running) {
                     gameSelCursor_ = (gameSelCursor_ + 1) % numGames; break;
                 case SDLK_a: case SDLK_RETURN:
                     selectGame(availableGames_[gameSelCursor_]);
+                    markDirty();
                     break;
                 case SDLK_MINUS:
                     showAbout_ = true; break;
@@ -1050,9 +1052,11 @@ void UI::drawRectOutline(int x, int y, int w, int h, SDL_Color color, int thickn
     }
 }
 
-void UI::drawStatusBar(const std::string& msg) {
+void UI::drawStatusBar(const std::string& msg, const std::string& rightLabel) {
     drawRect(0, SCREEN_H - 35, SCREEN_W, 35, {20, 20, 30, 255});
     drawText(msg, 15, SCREEN_H - 30, COLOR_STATUS, fontSmall_);
+    if (!rightLabel.empty())
+        drawTextRight(rightLabel, SCREEN_W - 15, SCREEN_H - 30, COLOR_SHINY, fontSmall_);
 }
 
 void UI::fillCircle(int cx, int cy, int r, SDL_Color color) {

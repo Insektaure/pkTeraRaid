@@ -29,6 +29,7 @@ bool RewardCalc::loadTables(const std::string& fixedPath, const std::string& lot
             uint64_t hash = r64(ptr); ptr += 8;
             uint8_t count = *ptr++;
             std::vector<FixedEntry> items;
+            items.reserve(count);
             for (int i = 0; i < count; i++) {
                 FixedEntry e;
                 e.category = *ptr++;
@@ -68,6 +69,7 @@ bool RewardCalc::loadTables(const std::string& fixedPath, const std::string& lot
             uint8_t count = *ptr++;
             LotteryTable lt;
             lt.totalRate = totalRate;
+            lt.items.reserve(count);
             for (int i = 0; i < count; i++) {
                 LotteryEntry e;
                 e.category = *ptr++;
@@ -408,6 +410,7 @@ std::vector<RewardItem> RewardCalc::calculateRewards(uint32_t seed, uint8_t star
     uint16_t species, uint8_t teraType) const
 {
     std::vector<RewardItem> result;
+    result.reserve(16);
 
     auto resolveItem = [&](uint8_t category, uint16_t itemId) -> uint16_t {
         if (itemId != 0) return itemId;

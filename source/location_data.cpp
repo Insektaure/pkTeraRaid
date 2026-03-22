@@ -72,6 +72,9 @@ bool LocationData::load(const std::string& paldeaPath,
     bool ok = loadJson(paldeaPath, paldea_);
     loadJson(kitakamiPath, kitakami_);
     loadJson(blueberryPath, blueberry_);
+    paldeaBounds_ = computeBounds(paldea_);
+    kitakamiBounds_ = computeBounds(kitakami_);
+    blueberryBounds_ = computeBounds(blueberry_);
     return ok;
 }
 
@@ -84,19 +87,23 @@ bool LocationData::getCoord(TeraRaidMapParent map, uint32_t areaID, uint32_t lot
     return true;
 }
 
-void LocationData::getBounds(TeraRaidMapParent map, float& minX, float& maxX, float& minZ, float& maxZ) const {
-    auto& m = getMap(map);
-    minX = FLT_MAX; maxX = -FLT_MAX;
-    minZ = FLT_MAX; maxZ = -FLT_MAX;
+LocationData::MapBounds LocationData::computeBounds(const std::unordered_map<std::string, RaidCoord>& m) {
+    MapBounds b{FLT_MAX, -FLT_MAX, FLT_MAX, -FLT_MAX};
     for (auto& [key, coord] : m) {
-        if (coord.x < minX) minX = coord.x;
-        if (coord.x > maxX) maxX = coord.x;
-        if (coord.z < minZ) minZ = coord.z;
-        if (coord.z > maxZ) maxZ = coord.z;
+        if (coord.x < b.minX) b.minX = coord.x;
+        if (coord.x > b.maxX) b.maxX = coord.x;
+        if (coord.z < b.minZ) b.minZ = coord.z;
+        if (coord.z > b.maxZ) b.maxZ = coord.z;
     }
-    // Add some padding
-    float padX = (maxX - minX) * 0.05f;
-    float padZ = (maxZ - minZ) * 0.05f;
-    minX -= padX; maxX += padX;
-    minZ -= padZ; maxZ += padZ;
+    float padX = (b.maxX - b.minX) * 0.05f;
+    float padZ = (b.maxZ - b.minZ) * 0.05f;
+    b.minX -= padX; b.maxX += padX;
+    b.minZ -= padZ; b.maxZ += padZ;
+    return b;
+}
+
+void LocationData::getBounds(TeraRaidMapParent map, float& minX, float& maxX, float& minZ, float& maxZ) const {
+    auto& b = getBoundsCache(map);
+    minX = b.minX; maxX = b.maxX;
+    minZ = b.minZ; maxZ = b.maxZ;
 }

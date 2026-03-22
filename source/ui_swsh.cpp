@@ -24,8 +24,7 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
     std::string mapDir  = "romfs/maps/";
 #endif
 
-    speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
-    typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+    loadTextData(dataDir);
     personal_.load(dataDir + "personal_sv");
 
     // Load SwSh map images
@@ -55,8 +54,11 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
     swshShowAll_ = false;
     rebuildSwShFilteredList();
 
+    dirty_ = true;
     bool running = true;
     while (running) {
+        bool aboutBefore = showAbout_;
+
         if (showAbout_) {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -73,16 +75,18 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
                         showAbout_ = false;
                 }
             }
-            drawSwShViewFrame();
-            drawAboutPopup();
-            SDL_RenderPresent(renderer_);
-            SDL_Delay(16);
-            continue;
+        } else {
+            handleSwShViewInput(running);
         }
 
-        handleSwShViewInput(running);
-        drawSwShViewFrame();
-        SDL_RenderPresent(renderer_);
+        if (showAbout_ != aboutBefore) markDirty();
+
+        if (dirty_) {
+            drawSwShViewFrame();
+            if (showAbout_) drawAboutPopup();
+            SDL_RenderPresent(renderer_);
+            dirty_ = false;
+        }
         SDL_Delay(16);
     }
 }
@@ -90,6 +94,7 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
 void UI::rebuildSwShFilteredList() {
     swshFiltered_.clear();
     auto& dens = denCrawler_.dens();
+    swshFiltered_.reserve(dens.size());
 
     SwShDenRegion targetRegion;
     switch (swshTab_) {
@@ -651,6 +656,7 @@ void UI::handleSwShViewInput(bool& running) {
         }
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            markDirty();
             if (swshShowDetail_) {
                 if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
                     swshShowDetail_ = false;
@@ -693,6 +699,7 @@ void UI::handleSwShViewInput(bool& running) {
         }
 
         if (event.type == SDL_KEYDOWN) {
+            markDirty();
             if (swshShowDetail_) {
                 if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
                     swshShowDetail_ = false;
@@ -742,6 +749,7 @@ void UI::handleSwShViewInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay && count > 0) {
+            markDirty();
             if (stickDirY_ < 0)
                 swshCursor_ = (swshCursor_ + count - 1) % count;
             else

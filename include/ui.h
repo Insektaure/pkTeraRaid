@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 
 enum class AppScreen { ProfileSelector, GameSelector, RaidView };
 
@@ -66,6 +67,8 @@ private:
     AppScreen screen_ = AppScreen::GameSelector;
     std::string basePath_;
     bool liveMode_ = false;
+    bool dirty_ = true;  // redraw needed
+    void markDirty() { dirty_ = true; }
 
     // Account
     AccountManager account_;
@@ -84,12 +87,14 @@ private:
     GameVersion selectedVersion_ = GameVersion::Scarlet;
 
     // Text data
+    bool textDataLoaded_ = false;
     std::vector<std::string> speciesNames_;
     std::vector<std::string> moveNames_;
     std::vector<std::string> natureNames_;
     std::vector<std::string> abilityNames_;
     std::vector<std::string> typeNames_;
     std::vector<std::string> itemNames_;
+    void loadTextData(const std::string& dataDir);
 
     // Sprite cache: species ID -> texture
     std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
@@ -155,6 +160,32 @@ private:
 
     // Map tabs
     void drawMapTabs(int x, int y, int w);
+
+    // Text texture cache
+    struct TextCacheKey {
+        std::string text;
+        TTF_Font* font;
+        uint32_t colorPacked;  // RGBA packed
+
+        bool operator==(const TextCacheKey& o) const {
+            return colorPacked == o.colorPacked && font == o.font && text == o.text;
+        }
+    };
+    struct TextCacheKeyHash {
+        size_t operator()(const TextCacheKey& k) const {
+            size_t h = std::hash<std::string>{}(k.text);
+            h ^= std::hash<uintptr_t>{}((uintptr_t)k.font) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            h ^= std::hash<uint32_t>{}(k.colorPacked) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            return h;
+        }
+    };
+    struct TextCacheEntry {
+        SDL_Texture* tex;
+        int w, h;
+    };
+    std::unordered_map<TextCacheKey, TextCacheEntry, TextCacheKeyHash> textCache_;
+    void freeTextCache();
+    TextCacheEntry& getCachedText(const std::string& text, SDL_Color color, TTF_Font* f);
 
     // Rendering helpers
     void drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f);

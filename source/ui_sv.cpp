@@ -13,6 +13,7 @@ static bool isRareItem(uint16_t id) {
 void UI::rebuildFilteredList() {
     filteredIndices_.clear();
     auto& raids = reader_.raids();
+    filteredIndices_.reserve(raids.size());
     for (int i = 0; i < (int)raids.size(); i++) {
         if (raids[i].map != currentMap_)
             continue;
@@ -136,29 +137,31 @@ void UI::drawMapPanel() {
 
         fillCircle(sx, sy, radius, dotColor);
         if (isSelected) {
-            // Draw selection ring outline around the dot
+            // Draw selection ring outline (batched)
             SDL_SetRenderDrawColor(renderer_, COLOR_CURSOR.r, COLOR_CURSOR.g, COLOR_CURSOR.b, 255);
             int rr = radius + 3;
+            SDL_Point ringPts[144]; // 72 angles * 2 thickness
+            int np = 0;
             for (int angle = 0; angle < 360; angle += 5) {
                 double rad = angle * 3.14159265 / 180.0;
-                for (int t = 0; t <= 1; t++) {
-                    int ox = sx + (int)((rr + t) * std::cos(rad));
-                    int oy = sy + (int)((rr + t) * std::sin(rad));
-                    SDL_RenderDrawPoint(renderer_, ox, oy);
-                }
+                double cosA = std::cos(rad), sinA = std::sin(rad);
+                ringPts[np++] = {sx + (int)(rr * cosA), sy + (int)(rr * sinA)};
+                ringPts[np++] = {sx + (int)((rr + 1) * cosA), sy + (int)((rr + 1) * sinA)};
             }
+            SDL_RenderDrawPoints(renderer_, ringPts, np);
         }
 
-        // Black outline for 6-star
+        // Black outline for 6-star (batched)
         if (raids[idx].content == RaidContent::Black) {
             SDL_SetRenderDrawColor(renderer_, 200, 200, 200, 255);
-            // Simple outline: draw circle border
+            SDL_Point outPts[24]; // 360/15 = 24
+            int np = 0;
+            int rr6 = radius + 1;
             for (int angle = 0; angle < 360; angle += 15) {
                 double rad = angle * 3.14159265 / 180.0;
-                int ox = sx + (int)((radius + 1) * std::cos(rad));
-                int oy = sy + (int)((radius + 1) * std::sin(rad));
-                SDL_RenderDrawPoint(renderer_, ox, oy);
+                outPts[np++] = {sx + (int)(rr6 * std::cos(rad)), sy + (int)(rr6 * std::sin(rad))};
             }
+            SDL_RenderDrawPoints(renderer_, outPts, np);
         }
     }
 }
@@ -207,26 +210,34 @@ void UI::drawListPanel() {
         if (raids[fi].details.shiny != TeraShiny::No) shinyCount++;
     }
 
-    std::string headerStr = "Raids: " + std::to_string(count);
+    char headerBuf[64];
     if (!svFilterShiny_)
-        headerStr += " - Shiny: " + std::to_string(shinyCount);
-    drawText(headerStr, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
+        snprintf(headerBuf, sizeof(headerBuf), "Raids: %d - Shiny: %d", count, shinyCount);
+    else
+        snprintf(headerBuf, sizeof(headerBuf), "Raids: %d", count);
+    drawText(headerBuf, LIST_PANEL_X + 10, headerY, COLOR_TEXT, fontSmall_);
 
     // Filter tags (centered, colored when active)
     bool hasFilter = svFilterShiny_ || svFilterPreset_ != SvFilterPreset::All;
     if (hasFilter) {
-        std::string filterStr;
-        if (svFilterShiny_) filterStr += "[Shiny]";
+        char filterBuf[64];
+        const char* presetStr = "";
         switch (svFilterPreset_) {
-            case SvFilterPreset::Stars5Plus: filterStr += (filterStr.empty() ? "" : " ") + std::string("[5+ Stars]"); break;
-            case SvFilterPreset::Stars6:     filterStr += (filterStr.empty() ? "" : " ") + std::string("[6 Stars]"); break;
-            case SvFilterPreset::RareDrops:  filterStr += (filterStr.empty() ? "" : " ") + std::string("[Rare Rewards]"); break;
+            case SvFilterPreset::Stars5Plus: presetStr = "[5+ Stars]"; break;
+            case SvFilterPreset::Stars6:     presetStr = "[6 Stars]"; break;
+            case SvFilterPreset::RareDrops:  presetStr = "[Rare Rewards]"; break;
             default: break;
         }
+        if (svFilterShiny_ && presetStr[0])
+            snprintf(filterBuf, sizeof(filterBuf), "[Shiny] %s", presetStr);
+        else if (svFilterShiny_)
+            snprintf(filterBuf, sizeof(filterBuf), "[Shiny]");
+        else
+            snprintf(filterBuf, sizeof(filterBuf), "%s", presetStr);
         int tw = 0, th = 0;
-        TTF_SizeUTF8(fontSmall_, filterStr.c_str(), &tw, &th);
+        TTF_SizeUTF8(fontSmall_, filterBuf, &tw, &th);
         int fx = LIST_PANEL_X + (LIST_PANEL_W - tw) / 2;
-        drawText(filterStr, fx, headerY, COLOR_SHINY, fontSmall_);
+        drawText(filterBuf, fx, headerY, COLOR_SHINY, fontSmall_);
     }
 
     // Trainer info
@@ -334,13 +345,15 @@ void UI::drawRaidRow(int x, int y, int w, const RaidInfo& raid, bool selected, i
     int line1Y = y + rh / 2 - 22;
     if (line1Y < y + 2) line1Y = y + 2;
 
-    std::string stars = getStarString(raid.details.stars);
-    drawText(stars, textX + COL_STARS, line1Y, textStar, font_);
+    drawText(getStarString(raid.details.stars), textX + COL_STARS, line1Y, textStar, font_);
 
-    std::string species = getSpeciesName(raid.details.species);
+    char speciesBuf[64];
+    const std::string& specName = getSpeciesName(raid.details.species);
     if (raid.details.form > 0)
-        species += " (F" + std::to_string(raid.details.form) + ")";
-    drawText(species, textX + COL_SPECIES, line1Y, textMain, font_);
+        snprintf(speciesBuf, sizeof(speciesBuf), "%s (F%d)", specName.c_str(), raid.details.form);
+    else
+        snprintf(speciesBuf, sizeof(speciesBuf), "%s", specName.c_str());
+    drawText(speciesBuf, textX + COL_SPECIES, line1Y, textMain, font_);
 
     char lvl[16];
     snprintf(lvl, sizeof(lvl), "Lv.%d", raid.details.level);
@@ -411,9 +424,10 @@ void UI::drawRaidViewFrame() {
     }
 
     if (liveMode_) {
-        std::string liveStatus = "Live Mode - ";
-        liveStatus += gameDisplayNameOf(selectedVersion_);
-        liveStatus += "  |  D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit";
+        char liveStatus[256];
+        snprintf(liveStatus, sizeof(liveStatus),
+            "Live Mode - %s  |  D-Pad:Nav  A:Detail  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit",
+            gameDisplayNameOf(selectedVersion_));
         drawStatusBar(liveStatus);
     } else {
         drawStatusBar("D-Pad:Nav  A:Detail  B:Back  X:Filter  Y:Shiny  L/R:Map  -:About  +:Quit");
@@ -455,10 +469,15 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
 
     // Title: species name + form (next to sprite)
     int titleX = lx + DETAIL_SPRITE_SIZE + 12;
-    std::string species = getSpeciesName(raid.details.species);
-    if (raid.details.form > 0)
-        species += " (Form " + std::to_string(raid.details.form) + ")";
-    drawText(species, titleX, y + 10, COLOR_TEXT, fontLarge_);
+    char detailSpecBuf[64];
+    {
+        const std::string& sp = getSpeciesName(raid.details.species);
+        if (raid.details.form > 0)
+            snprintf(detailSpecBuf, sizeof(detailSpecBuf), "%s (Form %d)", sp.c_str(), raid.details.form);
+        else
+            snprintf(detailSpecBuf, sizeof(detailSpecBuf), "%s", sp.c_str());
+    }
+    drawText(detailSpecBuf, titleX, y + 10, COLOR_TEXT, fontLarge_);
 
     // Star rating top-right
     std::string stars = getStarString(raid.details.stars);
@@ -567,25 +586,31 @@ void UI::drawDetailPopup(const RaidInfo& raid) {
     int maxRewardY = py + POP_H - 65;
 
     // Split into shared, host-only, joiner-only
-    struct DisplayItem { std::string name; bool rare; };
+    struct DisplayItem { char name[64]; bool rare; };
     std::vector<DisplayItem> sharedItems, hostItems, joinerItems;
     for (auto& a : aggRewards) {
-        std::string name = getItemName(a.id);
+        const std::string& itemName = getItemName(a.id);
         bool rare = isRareItem(a.id);
+        auto fmtItem = [&](char* buf, int amount) {
+            if (amount > 1)
+                snprintf(buf, 64, "%s x%d", itemName.c_str(), amount);
+            else
+                snprintf(buf, 64, "%s", itemName.c_str());
+        };
         if (a.hostTotal == a.joinerTotal) {
-            std::string line = name;
-            if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
-            sharedItems.push_back({line, rare});
+            DisplayItem item; item.rare = rare;
+            fmtItem(item.name, a.hostTotal);
+            sharedItems.push_back(item);
         } else {
             if (a.hostTotal > 0) {
-                std::string line = name;
-                if (a.hostTotal > 1) line += " x" + std::to_string(a.hostTotal);
-                hostItems.push_back({line, rare});
+                DisplayItem item; item.rare = rare;
+                fmtItem(item.name, a.hostTotal);
+                hostItems.push_back(item);
             }
             if (a.joinerTotal > 0) {
-                std::string line = name;
-                if (a.joinerTotal > 1) line += " x" + std::to_string(a.joinerTotal);
-                joinerItems.push_back({line, rare});
+                DisplayItem item; item.rare = rare;
+                fmtItem(item.name, a.joinerTotal);
+                joinerItems.push_back(item);
             }
         }
     }
@@ -664,6 +689,7 @@ void UI::handleRaidViewInput(bool& running) {
         }
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            markDirty();
             if (showDetail_) {
                 // Close detail with B button only (SDL_A = Switch B)
                 if (event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
@@ -720,6 +746,7 @@ void UI::handleRaidViewInput(bool& running) {
         }
 
         if (event.type == SDL_KEYDOWN) {
+            markDirty();
             if (showDetail_) {
                 if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
                     showDetail_ = false;
@@ -776,6 +803,7 @@ void UI::handleRaidViewInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay && count > 0) {
+            markDirty();
             if (stickDirY_ < 0)
                 raidCursor_ = (raidCursor_ + count - 1) % count;
             else

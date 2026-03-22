@@ -27,6 +27,7 @@ bool RaidReader::loadResources(const std::string& dir) {
 
 bool RaidReader::readSave(const std::string& savePath, GameVersion version) {
     raids_.clear();
+    raids_.reserve(200);
 
     // Read save file
     FILE* f = fopen(savePath.c_str(), "rb");
@@ -62,6 +63,7 @@ bool RaidReader::readSave(const std::string& savePath, GameVersion version) {
 bool RaidReader::readLive([[maybe_unused]] GameVersion version) {
 #ifdef __SWITCH__
     raids_.clear();
+    raids_.reserve(200);
 
     // Read Paldea raid block from game memory
     std::vector<uint8_t> paldeaBuf(DmntPointers::KTeraRaidPaldeaSize);

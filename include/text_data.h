@@ -11,6 +11,7 @@ inline std::vector<std::string> loadLines(const std::string& path) {
     std::vector<std::string> lines;
     std::ifstream f(path);
     if (!f.is_open()) return lines;
+    lines.reserve(1500);
     std::string line;
     while (std::getline(f, line)) {
         // Strip trailing \r

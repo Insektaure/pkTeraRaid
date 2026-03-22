@@ -76,6 +76,7 @@ bool UI::init() {
 }
 
 void UI::shutdown() {
+    freeTextCache();
     freeSprites();
     freeGameIcons();
     account_.freeTextures();
@@ -249,8 +250,12 @@ void UI::run(const std::string& basePath) {
     loadGameIcons();
 #endif
 
+    dirty_ = true;
     bool running = true;
     while (running) {
+        bool aboutBefore = showAbout_;
+        AppScreen screenBefore = screen_;
+
         // About popup intercepts input from any screen
         if (showAbout_) {
             SDL_Event event;
@@ -268,28 +273,28 @@ void UI::run(const std::string& basePath) {
                         showAbout_ = false;
                 }
             }
-            // Draw underlying screen, then about on top
-            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
-            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
-            else drawRaidViewFrame();
-            drawAboutPopup();
-            SDL_RenderPresent(renderer_);
-            SDL_Delay(16);
-            continue;
+        } else {
+            if (screen_ == AppScreen::ProfileSelector) {
+                handleProfileSelectorInput(running);
+            } else if (screen_ == AppScreen::GameSelector) {
+                handleGameSelectorInput(running);
+            } else if (screen_ == AppScreen::RaidView) {
+                handleRaidViewInput(running);
+            }
         }
 
-        AppScreen screenBefore = screen_;
-        if (screen_ == AppScreen::ProfileSelector) {
-            handleProfileSelectorInput(running);
-            if (screen_ == screenBefore) drawProfileSelectorFrame();
-        } else if (screen_ == AppScreen::GameSelector) {
-            handleGameSelectorInput(running);
-            if (screen_ == screenBefore) drawGameSelectorFrame();
-        } else if (screen_ == AppScreen::RaidView) {
-            handleRaidViewInput(running);
-            if (screen_ == screenBefore) drawRaidViewFrame();
+        // Any state transition forces a redraw
+        if (screen_ != screenBefore || showAbout_ != aboutBefore)
+            markDirty();
+
+        if (dirty_) {
+            if (screen_ == AppScreen::ProfileSelector) drawProfileSelectorFrame();
+            else if (screen_ == AppScreen::GameSelector) drawGameSelectorFrame();
+            else if (screen_ == AppScreen::RaidView) drawRaidViewFrame();
+            if (showAbout_) drawAboutPopup();
+            SDL_RenderPresent(renderer_);
+            dirty_ = false;
         }
-        SDL_RenderPresent(renderer_);
         SDL_Delay(16);
     }
 }
@@ -310,12 +315,7 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
     std::string mapDir  = "romfs/maps/";
 #endif
 
-    speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
-    moveNames_    = TextData::loadLines(dataDir + "moves_en.txt");
-    natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
-    abilityNames_ = TextData::loadLines(dataDir + "abilities_en.txt");
-    typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
-    itemNames_    = TextData::loadLines(dataDir + "items_en.txt");
+    loadTextData(dataDir);
 
     if (!reader_.loadResources(dataDir)) {
         showMessageAndWait("Error", "Failed to load encounter data.");
@@ -354,8 +354,11 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
 
     screen_ = AppScreen::RaidView;
 
+    dirty_ = true;
     bool running = true;
     while (running) {
+        bool aboutBefore = showAbout_;
+
         if (showAbout_) {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -372,16 +375,18 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
                         showAbout_ = false;
                 }
             }
-            drawRaidViewFrame();
-            drawAboutPopup();
-            SDL_RenderPresent(renderer_);
-            SDL_Delay(16);
-            continue;
+        } else {
+            handleRaidViewInput(running);
         }
 
-        handleRaidViewInput(running);
-        drawRaidViewFrame();
-        SDL_RenderPresent(renderer_);
+        if (showAbout_ != aboutBefore) markDirty();
+
+        if (dirty_) {
+            drawRaidViewFrame();
+            if (showAbout_) drawAboutPopup();
+            SDL_RenderPresent(renderer_);
+            dirty_ = false;
+        }
         SDL_Delay(16);
     }
 }
@@ -451,6 +456,7 @@ void UI::handleProfileSelectorInput(bool& running) {
         }
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            markDirty();
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                     profileSelCursor_ = (profileSelCursor_ + count - 1) % count; break;
@@ -466,6 +472,7 @@ void UI::handleProfileSelectorInput(bool& running) {
         }
 
         if (event.type == SDL_KEYDOWN) {
+            markDirty();
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
                     profileSelCursor_ = (profileSelCursor_ + count - 1) % count; break;
@@ -485,6 +492,7 @@ void UI::handleProfileSelectorInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
+            markDirty();
             if (stickDirX_ < 0)
                 profileSelCursor_ = (profileSelCursor_ + count - 1) % count;
             else
@@ -677,6 +685,7 @@ void UI::handleGameSelectorInput(bool& running) {
         }
 
         if (event.type == SDL_CONTROLLERBUTTONDOWN) {
+            markDirty();
             switch (event.cbutton.button) {
                 case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                     gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames; break;
@@ -699,6 +708,7 @@ void UI::handleGameSelectorInput(bool& running) {
         }
 
         if (event.type == SDL_KEYDOWN) {
+            markDirty();
             switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
                     gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames; break;
@@ -723,6 +733,7 @@ void UI::handleGameSelectorInput(bool& running) {
         uint32_t now = SDL_GetTicks();
         uint32_t delay = stickMoved_ ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
         if (now - stickMoveTime_ >= delay) {
+            markDirty();
             if (stickDirX_ < 0)
                 gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames;
             else
@@ -735,6 +746,7 @@ void UI::handleGameSelectorInput(bool& running) {
 
 void UI::selectGame(GameVersion game) {
     selectedVersion_ = game;
+    freeTextCache();
 
     showWorking("Loading resources...");
 
@@ -748,8 +760,7 @@ void UI::selectGame(GameVersion game) {
 
     if (isSwSh(game)) {
         // --- Sword / Shield save file path ---
-        speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
-        typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+        loadTextData(dataDir);
         personal_.load(dataDir + "personal_sv");
 
         auto loadMap = [&](const char* name) -> SDL_Texture* {
@@ -801,8 +812,11 @@ void UI::selectGame(GameVersion game) {
         rebuildSwShFilteredList();
 
         // Enter SwSh view loop (reuses the same draw/input as live mode)
+        dirty_ = true;
         bool running = true;
         while (running) {
+            bool aboutBefore = showAbout_;
+
             if (showAbout_) {
                 SDL_Event event;
                 while (SDL_PollEvent(&event)) {
@@ -819,16 +833,18 @@ void UI::selectGame(GameVersion game) {
                             showAbout_ = false;
                     }
                 }
-                drawSwShViewFrame();
-                drawAboutPopup();
-                SDL_RenderPresent(renderer_);
-                SDL_Delay(16);
-                continue;
+            } else {
+                handleSwShViewInput(running);
             }
 
-            handleSwShViewInput(running);
-            drawSwShViewFrame();
-            SDL_RenderPresent(renderer_);
+            if (showAbout_ != aboutBefore) markDirty();
+
+            if (dirty_) {
+                drawSwShViewFrame();
+                if (showAbout_) drawAboutPopup();
+                SDL_RenderPresent(renderer_);
+                dirty_ = false;
+            }
             SDL_Delay(16);
         }
 
@@ -839,12 +855,7 @@ void UI::selectGame(GameVersion game) {
     // --- Scarlet / Violet save file path ---
 
     // Load text data
-    speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
-    moveNames_    = TextData::loadLines(dataDir + "moves_en.txt");
-    natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
-    abilityNames_ = TextData::loadLines(dataDir + "abilities_en.txt");
-    typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
-    itemNames_    = TextData::loadLines(dataDir + "items_en.txt");
+    loadTextData(dataDir);
 
     if (!reader_.loadResources(dataDir)) {
         showMessageAndWait("Error", "Failed to load encounter data.");
@@ -972,29 +983,57 @@ void UI::drawAboutPopup() {
 
 // --- Rendering helpers ---
 
+UI::TextCacheEntry& UI::getCachedText(const std::string& text, SDL_Color color, TTF_Font* f) {
+    uint32_t cp = (uint32_t)color.r | ((uint32_t)color.g << 8) |
+                  ((uint32_t)color.b << 16) | ((uint32_t)color.a << 24);
+    TextCacheKey key{text, f, cp};
+    auto it = textCache_.find(key);
+    if (it != textCache_.end())
+        return it->second;
+
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(f, text.c_str(), color);
+    TextCacheEntry entry{nullptr, 0, 0};
+    if (surf) {
+        entry.tex = SDL_CreateTextureFromSurface(renderer_, surf);
+        entry.w = surf->w;
+        entry.h = surf->h;
+        SDL_FreeSurface(surf);
+    }
+    return textCache_.emplace(std::move(key), entry).first->second;
+}
+
+void UI::freeTextCache() {
+    for (auto& [k, e] : textCache_) {
+        if (e.tex) SDL_DestroyTexture(e.tex);
+    }
+    textCache_.clear();
+}
+
 void UI::drawText(const std::string& text, int x, int y, SDL_Color color, TTF_Font* f) {
     if (!f || text.empty()) return;
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(f, text.c_str(), color);
-    if (!surf) return;
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-    SDL_Rect dst = {x, y, surf->w, surf->h};
-    SDL_RenderCopy(renderer_, tex, nullptr, &dst);
-    SDL_DestroyTexture(tex);
-    SDL_FreeSurface(surf);
+    auto& entry = getCachedText(text, color, f);
+    if (entry.tex) {
+        SDL_Rect dst = {x, y, entry.w, entry.h};
+        SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
+    }
 }
 
 void UI::drawTextCentered(const std::string& text, int cx, int cy, SDL_Color color, TTF_Font* f) {
     if (!f || text.empty()) return;
-    int tw, th;
-    TTF_SizeUTF8(f, text.c_str(), &tw, &th);
-    drawText(text, cx - tw / 2, cy - th / 2, color, f);
+    auto& entry = getCachedText(text, color, f);
+    if (entry.tex) {
+        SDL_Rect dst = {cx - entry.w / 2, cy - entry.h / 2, entry.w, entry.h};
+        SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
+    }
 }
 
 void UI::drawTextRight(const std::string& text, int rx, int y, SDL_Color color, TTF_Font* f) {
     if (!f || text.empty()) return;
-    int tw, th;
-    TTF_SizeUTF8(f, text.c_str(), &tw, &th);
-    drawText(text, rx - tw, y, color, f);
+    auto& entry = getCachedText(text, color, f);
+    if (entry.tex) {
+        SDL_Rect dst = {rx - entry.w, y, entry.w, entry.h};
+        SDL_RenderCopy(renderer_, entry.tex, nullptr, &dst);
+    }
 }
 
 void UI::drawRect(int x, int y, int w, int h, SDL_Color color) {
@@ -1075,6 +1114,19 @@ void UI::freeSprites() {
     spriteCache_.clear();
 }
 
+// --- Text data ---
+
+void UI::loadTextData(const std::string& dataDir) {
+    if (textDataLoaded_) return;
+    speciesNames_ = TextData::loadLines(dataDir + "species_en.txt");
+    moveNames_    = TextData::loadLines(dataDir + "moves_en.txt");
+    natureNames_  = TextData::loadLines(dataDir + "natures_en.txt");
+    abilityNames_ = TextData::loadLines(dataDir + "abilities_en.txt");
+    typeNames_    = TextData::loadLines(dataDir + "types_en.txt");
+    itemNames_    = TextData::loadLines(dataDir + "items_en.txt");
+    textDataLoaded_ = true;
+}
+
 // --- Name lookups ---
 
 std::string UI::getSpeciesName(uint16_t species) const {
@@ -1126,9 +1178,11 @@ std::string UI::getItemName(uint16_t itemId) const {
 }
 
 std::string UI::getStarString(uint8_t stars) const {
-    std::string s;
-    for (int i = 0; i < stars; i++) s += '*';
-    return s;
+    static const char allStars[] = "*******";
+    int n = stars;
+    if (n < 0) n = 0;
+    if (n > 7) n = 7;
+    return std::string(allStars, n);
 }
 
 SDL_Color UI::getTypeColor(uint8_t type) const {

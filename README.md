@@ -98,6 +98,34 @@ Also includes a spawner viewer for Pokemon Legends: Arceus.
 | - | About |
 | + | Quit |
 
+## Ultrahand overlay (Legends Arceus quick-glance)
+
+`overlay/` builds a companion `.ovl` that runs under [Ultrahand](https://github.com/ppkantorski/Ultrahand-Overlay) (libultrahand). It reads Legends Arceus spawner state from memory and shows a compact summary (current shinies + "shiny in N" within 100 advances) per Hisui region. Use it as a triage screen — flip L/R through the regions while in-game, then launch the main app for the map + detail view.
+
+### Overlay build
+
+1. Pull in the libultrahand submodule (skip if you've already run it):
+   ```bash
+   git submodule update --init --recursive
+   ```
+2. Build from the repo root:
+   ```bash
+   export DEVKITPRO=/opt/devkitpro
+   make -C overlay
+   ```
+3. Output is `overlay/pkTeraRaid.ovl`.
+
+Portlibs required in addition to the main app's SDL stack: `curl`, `zlib`, `minizip`, `mbedtls`. Install with:
+```bash
+sudo dkp-pacman -S switch-curl switch-zlib switch-libminizip switch-mbedtls
+```
+
+### Overlay install
+
+Copy `overlay/pkTeraRaid.ovl` to `/switch/.overlays/pkTeraRaid.ovl` on your SD card. Ultrahand picks it up automatically; summon Ultrahand (default: `L + ZL + Dpad-Down` or your configured combo) while PLA is running.
+
+**Overlay navigation:** menu-based. The root shows the 5 Hisui regions with a per-region shiny count summary; select one with `A` to open its detail view (current shinies + spawners within 100 advances). `B` returns to the region list. `Y` rescans memory on either screen.
+
 ## Building
 
 ### Prerequisites

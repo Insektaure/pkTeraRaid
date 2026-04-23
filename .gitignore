@@ -5,6 +5,7 @@
 *.nro
 *.nacp
 *.elf
+*.ovl
 .vscode
 builddir
 *.dksh

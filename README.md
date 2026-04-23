@@ -66,7 +66,7 @@ Also includes a spawner viewer for Pokemon Legends: Arceus.
   - Predicted species (+ alpha marker `α`) resolved from per-spawner slot tables
   - Active/inactive state (active = currently spawning in the world)
   - Generator seed + derived group seed
-  - First fixed-spawn preview: EC, PID, nature, ability, gender, IVs (color-coded 31/0)
+  - First fixed-spawn preview: EC, PID, nature, IVs (color-coded 31/0)
   - Shiny prediction: "Current" if the first spawn is shiny, otherwise "Shiny in N" up to 5000 advances - using the per-group guaranteed-IV count from the marker database
 - **Mass outbreak badge**: detected group ID + spawn count overlaid on the map
 - **Filters**: X toggles active-only, Y toggles shiny-only
@@ -100,7 +100,7 @@ Also includes a spawner viewer for Pokemon Legends: Arceus.
 
 ## Ultrahand overlay (Legends Arceus quick-glance)
 
-`overlay/` builds a companion `.ovl` that runs under [Ultrahand](https://github.com/ppkantorski/Ultrahand-Overlay) (libultrahand). It reads Legends Arceus spawner state from memory and shows a compact summary (current shinies + "shiny in N" within 100 advances) per Hisui region. Use it as a triage screen — flip L/R through the regions while in-game, then launch the main app for the map + detail view.
+`overlay/` builds a companion `.ovl` that runs under [Ultrahand](https://github.com/ppkantorski/Ultrahand-Overlay) (libultrahand). It reads Legends Arceus spawner state from memory and shows a compact summary (current shinies + "shiny in N" within 100 advances) per Hisui region. Use it as a triage screen from within the game — pick a region from the menu for detail, then launch the main pkTeraRaid app when you want the map + full spawner info.
 
 ### Overlay build
 

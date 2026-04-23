@@ -1,6 +1,7 @@
 # pkTeraRaid - Map Viewer
 
-A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarlet & Violet and Sword & Shield.
+A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarlet & Violet and Sword & Shield.\
+Also includes a spawner viewer for Pokemon Legends: Arceus.
 
 ## Features
 
@@ -56,15 +57,30 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
 - **Profile selector** with support for multiple Switch user profiles
 - **Game selector** for switching between Sword, Shield, Scarlet, and Violet save data
 
+### Pokemon Legends: Arceus — Spawner Viewer
+
+- **Live mode only** (Applet). No save-file mode - PLA generates encounters from live spawner seeds.
+- **Region tabs** (L/R) for all 5 Hisui regions: Obsidian Fieldlands, Crimson Mirelands, Cobalt Coastlands, Coronet Highlands, Alabaster Icelands
+- **Interactive map view** with marker dots projected from world coordinates; selected spawner highlighted
+- **Spawner scan** across all groups in the map, showing for each:
+  - Predicted species (+ alpha marker `α`) resolved from per-spawner slot tables
+  - Active/inactive state (active = currently spawning in the world)
+  - Generator seed + derived group seed
+  - First fixed-spawn preview: EC, PID, nature, ability, gender, IVs (color-coded 31/0)
+  - Shiny prediction: "Current" if the first spawn is shiny, otherwise "Shiny in N" up to 5000 advances - using the per-group guaranteed-IV count from the marker database
+- **Mass outbreak badge**: detected group ID + spawn count overlaid on the map
+- **Filters**: X toggles active-only, Y toggles shiny-only
+
 ## Compatibility
 
 - Scarlet / Violet version **3.0.1 / 4.0.0 only** !
 - Sword / Shield version **1.3.2 only** !
+- Legends: Arceus version **1.1.0 / 1.1.1 only !**
 
 ## Requirements
 
 - Nintendo Switch with [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) custom firmware
-- Pokemon Scarlet, Violet, Sword, or Shield (physical or digital)
+- Pokemon Scarlet, Violet, Sword, Shield, or Legends: Arceus (physical or digital)
 - **Save file mode**: Launch via title override (hold R while launching a game)
 - **Live mode**: Launch from HBMenu overlay (album applet) while the game is running
 
@@ -74,10 +90,11 @@ A Nintendo Switch homebrew application for viewing raid details in Pokemon Scarl
 |--------|--------|
 | D-Pad / Left Stick | Navigate |
 | A | Select / View details |
-| X | Cycle filter preset (SV) / Toggle active/all dens (SwSh) |
-| Y | Toggle shiny filter (SV) |
+| X | Cycle filter preset (SV) / Toggle active/all dens (SwSh) / Toggle active-only (PLA) |
+| Y | Toggle shiny filter (SV) / Toggle shiny-only (PLA) |
 | B | Back / Close details |
 | L / R | Switch map tab |
+| ZL / ZR | Scroll list 10 at a time |
 | - | About |
 | + | Quit |
 
@@ -135,6 +152,7 @@ make clean
 - [RaidCrawler](https://github.com/LegoFigure11/RaidCrawler) by LegoFigure11 - Map coordinate formulas and reward table data
 - [CaptureSight](https://github.com/zaksabeast/CaptureSight) by zaksabeast - SwSh den data structures and encounter tables
 - [PKHeX Raid Plugin](https://github.com/architPokemon/PKHeX_Raid_Plugin) - SwSh den map coordinates and location data
+- [PLA-Live-Map](https://github.com/Lincoln-LM/PLA-Live-Map) by Lincoln-LM - PLA pointer chains and spawner RNG logic
 - [JKSV](https://github.com/J-D-K/JKSV) by J-D-K - Save data access approach
 - [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) - dmntcht for live memory reading
 

@@ -426,11 +426,11 @@ void UI::drawRaidViewFrame() {
     if (liveMode_) {
         char modeLabel[64];
         snprintf(modeLabel, sizeof(modeLabel), "Live Mode - %s", gameDisplayNameOf(selectedVersion_));
-        drawStatusBar("D-Pad: Nav  A: Detail  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  ZL/ZR: Page  A: Detail  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
     } else {
         char modeLabel[64];
         snprintf(modeLabel, sizeof(modeLabel), "Save File - %s", gameDisplayNameOf(selectedVersion_));
-        drawStatusBar("D-Pad: Nav  A: Detail  B: Back  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  ZL/ZR: Page  A: Detail  B: Back  X: Filter  Y: Shiny  L/R: Map  -: About  +: Quit", modeLabel);
     }
 }
 
@@ -745,57 +745,6 @@ void UI::handleRaidViewInput(bool& running) {
             }
         }
 
-        if (event.type == SDL_KEYDOWN) {
-            markDirty();
-            if (showDetail_) {
-                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
-                    showDetail_ = false;
-                continue;
-            }
-
-            switch (event.key.keysym.sym) {
-                case SDLK_UP:
-                    if (count > 0) raidCursor_ = (raidCursor_ + count - 1) % count;
-                    break;
-                case SDLK_DOWN:
-                    if (count > 0) raidCursor_ = (raidCursor_ + 1) % count;
-                    break;
-                case SDLK_q: { // L
-                    int m = ((int)currentMap_ + 2) % 3;
-                    currentMap_ = (TeraRaidMapParent)m;
-                    raidCursor_ = 0; raidScroll_ = 0;
-                    rebuildFilteredList();
-                    break;
-                }
-                case SDLK_e: { // R
-                    int m = ((int)currentMap_ + 1) % 3;
-                    currentMap_ = (TeraRaidMapParent)m;
-                    raidCursor_ = 0; raidScroll_ = 0;
-                    rebuildFilteredList();
-                    break;
-                }
-                case SDLK_a: case SDLK_RETURN:
-                    if (count > 0) showDetail_ = true;
-                    break;
-                case SDLK_y: { // cycle filter preset
-                    svFilterPreset_ = (SvFilterPreset)(((int)svFilterPreset_ + 1) % (int)SvFilterPreset::COUNT);
-                    raidCursor_ = 0; raidScroll_ = 0;
-                    rebuildFilteredList();
-                    break;
-                }
-                case SDLK_x: // toggle shiny filter
-                    svFilterShiny_ = !svFilterShiny_;
-                    raidCursor_ = 0; raidScroll_ = 0;
-                    rebuildFilteredList();
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true; break;
-                case SDLK_b: case SDLK_ESCAPE:
-                    if (!liveMode_)
-                        screen_ = AppScreen::GameSelector;
-                    break;
-            }
-        }
     }
 
     // Joystick repeat
@@ -810,6 +759,17 @@ void UI::handleRaidViewInput(bool& running) {
                 raidCursor_ = (raidCursor_ + 1) % count;
             stickMoveTime_ = now;
             stickMoved_ = true;
+        }
+    }
+
+    // ZL/ZR page scroll (hold to repeat)
+    if (!showDetail_ && count > 0) {
+        int trig = pollTrigger();
+        if (trig != 0) {
+            int nc = raidCursor_ + trig * LIST_PAGE_STEP;
+            if (nc < 0) nc = 0;
+            if (nc > count - 1) nc = count - 1;
+            if (nc != raidCursor_) { raidCursor_ = nc; markDirty(); }
         }
     }
 }

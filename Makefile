@@ -11,12 +11,12 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 #---------------------------------------------------------------------------------
 APP_TITLE	:=	pkTeraRaid - Map Viewer
-APP_VERSION :=	1.2.0
+APP_VERSION :=	1.3.0
 APP_AUTHOR	:=	Insektaure
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/swsh
+SOURCES		:=	source source/swsh source/pla
 DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs

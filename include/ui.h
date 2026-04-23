@@ -5,6 +5,7 @@
 #include "personal_table.h"
 #include "swsh/den_crawler.h"
 #include "swsh/den_locations.h"
+#include "pla/pla_reader.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -25,6 +26,7 @@ public:
     void run(const std::string& basePath);
     void runLive(const std::string& basePath, GameVersion game);
     void runSwSh(const std::string& basePath, GameVersion game);
+    void runPla(const std::string& basePath);
 
 private:
     SDL_Window*          window_    = nullptr;
@@ -62,6 +64,13 @@ private:
     uint32_t stickMoveTime_ = 0;
     bool stickMoved_ = false;
     void updateStick(int16_t axisX, int16_t axisY);
+
+    // ZL/ZR hold-to-repeat paging (triggers reported as axes on SDL).
+    // Poll once per frame — returns -1 while ZL should fire, +1 while ZR should fire.
+    uint32_t zlPressTime_ = 0, zrPressTime_ = 0;
+    bool     zlRepeating_ = false, zrRepeating_ = false;
+    int pollTrigger();
+    static constexpr int LIST_PAGE_STEP = 10;
 
     // App state
     AppScreen screen_ = AppScreen::GameSelector;
@@ -231,4 +240,25 @@ private:
     void drawSwShRow(int x, int y, int w, const SwShDenInfo& den, bool selected, int rowH);
     void drawSwShDetailPopup(const SwShDenInfo& den);
     void handleSwShViewInput(bool& running);
+
+    // --- PLA spawner viewer ---
+    PlaReader plaReader_;
+    PlaOutbreak plaOutbreak_{};
+    int plaCursor_ = 0;
+    int plaScroll_ = 0;
+    int plaTab_ = 0;          // 0..4 = PlaRegion enum
+    bool plaShowDetail_ = false;
+    bool plaActiveOnly_ = false;
+    bool plaShinyOnly_ = false;
+    std::vector<int> plaFiltered_;
+    SDL_Texture* plaMaps_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+
+    void rebuildPlaFilteredList();
+    void drawPlaViewFrame();
+    void drawPlaMapPanel();
+    void drawPlaMapTabs(int x, int y, int w);
+    void drawPlaListPanel();
+    void drawPlaRow(int x, int y, int w, const PlaSpawner& s, bool selected, int rowH);
+    void drawPlaDetailPopup(const PlaSpawner& s);
+    void handlePlaViewInput(bool& running);
 };

@@ -68,12 +68,6 @@ void UI::runSwSh(const std::string& basePath, GameVersion game) {
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
                         showAbout_ = false;
                 }
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_MINUS ||
-                        event.key.keysym.sym == SDLK_b ||
-                        event.key.keysym.sym == SDLK_ESCAPE)
-                        showAbout_ = false;
-                }
             }
         } else {
             handleSwShViewInput(running);
@@ -146,9 +140,9 @@ void UI::drawSwShViewFrame() {
     char modeLabel[64];
     snprintf(modeLabel, sizeof(modeLabel), "%s - %s", liveMode_ ? "Live Mode" : "Save File", gameName);
     if (liveMode_)
-        drawStatusBar("D-Pad: Navigate  A: Detail  X: Toggle  L/R: Map Tab  -: About  +: Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  ZL/ZR: Page  A: Detail  X: Toggle  L/R: Map Tab  -: About  +: Quit", modeLabel);
     else
-        drawStatusBar("D-Pad: Navigate  A: Detail  X: Toggle  B: Back  L/R: Map Tab  -: About  +: Quit", modeLabel);
+        drawStatusBar("D-Pad: Nav  ZL/ZR: Page  A: Detail  X: Toggle  B: Back  L/R: Map Tab  -: About  +: Quit", modeLabel);
 }
 
 void UI::drawSwShMapPanel() {
@@ -697,50 +691,6 @@ void UI::handleSwShViewInput(bool& running) {
             }
         }
 
-        if (event.type == SDL_KEYDOWN) {
-            markDirty();
-            if (swshShowDetail_) {
-                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE)
-                    swshShowDetail_ = false;
-                continue;
-            }
-
-            switch (event.key.keysym.sym) {
-                case SDLK_UP:
-                    if (count > 0) swshCursor_ = (swshCursor_ + count - 1) % count;
-                    break;
-                case SDLK_DOWN:
-                    if (count > 0) swshCursor_ = (swshCursor_ + 1) % count;
-                    break;
-                case SDLK_q:
-                    swshTab_ = (swshTab_ + 2) % 3;
-                    swshCursor_ = 0; swshScroll_ = 0;
-                    rebuildSwShFilteredList();
-                    break;
-                case SDLK_e:
-                    swshTab_ = (swshTab_ + 1) % 3;
-                    swshCursor_ = 0; swshScroll_ = 0;
-                    rebuildSwShFilteredList();
-                    break;
-                case SDLK_x:
-                    swshShowAll_ = !swshShowAll_;
-                    swshCursor_ = 0; swshScroll_ = 0;
-                    rebuildSwShFilteredList();
-                    break;
-                case SDLK_a: case SDLK_RETURN:
-                    if (count > 0) swshShowDetail_ = true;
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true;
-                    break;
-                case SDLK_b:
-                    if (!liveMode_) running = false;
-                    break;
-                case SDLK_ESCAPE:
-                    running = false;
-                    break;
-            }
-        }
     }
 
     // Joystick repeat
@@ -755,6 +705,17 @@ void UI::handleSwShViewInput(bool& running) {
                 swshCursor_ = (swshCursor_ + 1) % count;
             stickMoveTime_ = now;
             stickMoved_ = true;
+        }
+    }
+
+    // ZL/ZR page scroll (hold to repeat)
+    if (!swshShowDetail_ && count > 0) {
+        int trig = pollTrigger();
+        if (trig != 0) {
+            int nc = swshCursor_ + trig * LIST_PAGE_STEP;
+            if (nc < 0) nc = 0;
+            if (nc > count - 1) nc = count - 1;
+            if (nc != swshCursor_) { swshCursor_ = nc; markDirty(); }
         }
     }
 }

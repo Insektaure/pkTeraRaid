@@ -65,11 +65,13 @@ int main(int argc, char* argv[]) {
             game = GameVersion::Sword;
         } else if (tid == SHIELD_TITLE_ID) {
             game = GameVersion::Shield;
+        } else if (tid == PLA_TITLE_ID) {
+            game = GameVersion::LegendsArceus;
         } else {
             ui.showMessageAndWait("Wrong Game",
                                   "No supported game is running.\n"
                                   "Please launch Pokemon Sword, Shield,\n"
-                                  "Scarlet, or Violet.");
+                                  "Scarlet, Violet, or Legends: Arceus.");
             DmntMem::exit();
             ui.shutdown();
             romfsExit();
@@ -78,6 +80,8 @@ int main(int argc, char* argv[]) {
 
         if (isSwSh(game)) {
             ui.runSwSh(basePath, game);
+        } else if (isPLA(game)) {
+            ui.runPla(basePath);
         } else {
             ui.runLive(basePath, game);
         }

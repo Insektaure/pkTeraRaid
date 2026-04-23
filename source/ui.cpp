@@ -187,11 +187,6 @@ void UI::showMessageAndWait(const std::string& title, const std::string& body) {
                     event.cbutton.button == SDL_CONTROLLER_BUTTON_B)
                     waiting = false;
             }
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_b || event.key.keysym.sym == SDLK_ESCAPE ||
-                    event.key.keysym.sym == SDLK_RETURN)
-                    waiting = false;
-            }
         }
         SDL_SetRenderDrawColor(renderer_, COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 255);
         SDL_RenderClear(renderer_);
@@ -264,12 +259,6 @@ void UI::run(const std::string& basePath) {
                 if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                     if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
-                        showAbout_ = false;
-                }
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_MINUS ||
-                        event.key.keysym.sym == SDLK_b ||
-                        event.key.keysym.sym == SDLK_ESCAPE)
                         showAbout_ = false;
                 }
             }
@@ -366,12 +355,6 @@ void UI::runLive(const std::string& basePath, GameVersion game) {
                 if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                     if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                         event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
-                        showAbout_ = false;
-                }
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_MINUS ||
-                        event.key.keysym.sym == SDLK_b ||
-                        event.key.keysym.sym == SDLK_ESCAPE)
                         showAbout_ = false;
                 }
             }
@@ -471,21 +454,6 @@ void UI::handleProfileSelectorInput(bool& running) {
             }
         }
 
-        if (event.type == SDL_KEYDOWN) {
-            markDirty();
-            switch (event.key.keysym.sym) {
-                case SDLK_LEFT:
-                    profileSelCursor_ = (profileSelCursor_ + count - 1) % count; break;
-                case SDLK_RIGHT:
-                    profileSelCursor_ = (profileSelCursor_ + 1) % count; break;
-                case SDLK_a: case SDLK_RETURN:
-                    selectProfile(profileSelCursor_); break;
-                case SDLK_MINUS:
-                    showAbout_ = true; break;
-                case SDLK_ESCAPE:
-                    running = false; break;
-            }
-        }
     }
 
     if (stickDirX_ != 0) {
@@ -648,6 +616,7 @@ void UI::drawGameSelectorFrame() {
                 case GameVersion::Violet:  bg = {80, 50, 180, 255}; letter = "V"; break;
                 case GameVersion::Sword:   bg = {50, 100, 180, 255}; letter = "Sw"; break;
                 case GameVersion::Shield:  bg = {180, 50, 100, 255}; letter = "Sh"; break;
+                case GameVersion::LegendsArceus: bg = {140, 90, 60, 255}; letter = "LA"; break;
             }
             drawRect(iconX, iconY, ICON_SIZE, ICON_SIZE, bg);
             drawTextCentered(letter,
@@ -708,27 +677,6 @@ void UI::handleGameSelectorInput(bool& running) {
             }
         }
 
-        if (event.type == SDL_KEYDOWN) {
-            markDirty();
-            switch (event.key.keysym.sym) {
-                case SDLK_LEFT:
-                    gameSelCursor_ = (gameSelCursor_ + numGames - 1) % numGames; break;
-                case SDLK_RIGHT:
-                    gameSelCursor_ = (gameSelCursor_ + 1) % numGames; break;
-                case SDLK_a: case SDLK_RETURN:
-                    selectGame(availableGames_[gameSelCursor_]);
-                    markDirty();
-                    break;
-                case SDLK_MINUS:
-                    showAbout_ = true; break;
-                case SDLK_b: case SDLK_ESCAPE:
-                    if (selectedProfile_ >= 0)
-                        screen_ = AppScreen::ProfileSelector;
-                    else
-                        running = false;
-                    break;
-            }
-        }
     }
 
     if (stickDirX_ != 0) {
@@ -826,12 +774,6 @@ void UI::selectGame(GameVersion game) {
                     if (event.type == SDL_CONTROLLERBUTTONDOWN) {
                         if (event.cbutton.button == SDL_CONTROLLER_BUTTON_BACK ||
                             event.cbutton.button == SDL_CONTROLLER_BUTTON_A)
-                            showAbout_ = false;
-                    }
-                    if (event.type == SDL_KEYDOWN) {
-                        if (event.key.keysym.sym == SDLK_MINUS ||
-                            event.key.keysym.sym == SDLK_b ||
-                            event.key.keysym.sym == SDLK_ESCAPE)
                             showAbout_ = false;
                     }
                 }
@@ -1065,6 +1007,27 @@ void UI::fillCircle(int cx, int cy, int r, SDL_Color color) {
         int dx = (int)std::sqrt(r * r - dy * dy);
         SDL_RenderDrawLine(renderer_, cx - dx, cy + dy, cx + dx, cy + dy);
     }
+}
+
+int UI::pollTrigger() {
+    constexpr int16_t TH = 16000;
+    int16_t lv = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+    int16_t rv = SDL_GameControllerGetAxis(pad_, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+    bool lDown = lv > TH;
+    bool rDown = rv > TH;
+    uint32_t now = SDL_GetTicks();
+
+    auto tick = [&](bool down, uint32_t& pressTime, bool& repeating) -> bool {
+        if (!down) { pressTime = 0; repeating = false; return false; }
+        if (pressTime == 0) { pressTime = now; repeating = false; return true; }
+        uint32_t delay = repeating ? STICK_REPEAT_DELAY : STICK_INITIAL_DELAY;
+        if (now - pressTime >= delay) { pressTime = now; repeating = true; return true; }
+        return false;
+    };
+
+    if (tick(lDown, zlPressTime_, zlRepeating_)) return -1;
+    if (tick(rDown, zrPressTime_, zrRepeating_)) return +1;
+    return 0;
 }
 
 void UI::updateStick(int16_t axisX, int16_t axisY) {

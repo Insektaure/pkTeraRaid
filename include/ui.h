@@ -248,7 +248,6 @@ private:
     int plaScroll_ = 0;
     int plaTab_ = 0;          // 0..4 = PlaRegion enum
     bool plaShowDetail_ = false;
-    bool plaActiveOnly_ = false;
     bool plaShinyOnly_ = false;
     std::vector<int> plaFiltered_;
     SDL_Texture* plaMaps_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};

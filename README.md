@@ -69,7 +69,7 @@ Also includes a spawner viewer for Pokemon Legends: Arceus.
   - First fixed-spawn preview: EC, PID, nature, IVs (color-coded 31/0)
   - Shiny prediction: "Current" if the first spawn is shiny, otherwise "Shiny in N" up to 5000 advances - using the per-group guaranteed-IV count from the marker database
 - **Mass outbreak badge**: detected group ID + spawn count overlaid on the map
-- **Filters**: X toggles active-only, Y toggles shiny-only
+- **Filter**: Y toggles shiny-only
 
 ## Compatibility
 
@@ -90,7 +90,7 @@ Also includes a spawner viewer for Pokemon Legends: Arceus.
 |--------|--------|
 | D-Pad / Left Stick | Navigate |
 | A | Select / View details |
-| X | Cycle filter preset (SV) / Toggle active/all dens (SwSh) / Toggle active-only (PLA) |
+| X | Cycle filter preset (SV) / Toggle active/all dens (SwSh) |
 | Y | Toggle shiny filter (SV) / Toggle shiny-only (PLA) |
 | B | Back / Close details |
 | L / R | Switch map tab |

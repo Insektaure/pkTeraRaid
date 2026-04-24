@@ -85,7 +85,6 @@ void UI::rebuildPlaFilteredList() {
     for (int i = 0; i < (int)sps.size(); i++) {
         const auto& s = sps[i];
         if (s.region != plaTab_) continue;
-        if (plaActiveOnly_ && !s.active) continue;
         if (plaShinyOnly_ && !(s.shinyAdvance == 0 && s.firstSpawn.shiny)) continue;
         plaFiltered_.push_back(i);
     }
@@ -124,7 +123,7 @@ void UI::drawPlaViewFrame() {
     }
 
     drawStatusBar(
-        "D-Pad: Nav  ZL/ZR: Page  A: Detail  X: Active-only  Y: Shiny-only  L/R: Region  -: About  +: Quit",
+        "D-Pad: Nav  ZL/ZR: Page  A: Detail  Y: Shiny-only  L/R: Region  -: About  +: Quit",
         "Live Mode - Pokemon Legends: Arceus");
 }
 
@@ -452,11 +451,6 @@ void UI::handlePlaViewInput(bool& running) {
                     break;
                 case SDL_CONTROLLER_BUTTON_B: // Switch A
                     if (count > 0) plaShowDetail_ = true;
-                    break;
-                case SDL_CONTROLLER_BUTTON_Y: // Switch X
-                    plaActiveOnly_ = !plaActiveOnly_;
-                    plaCursor_ = 0; plaScroll_ = 0;
-                    rebuildPlaFilteredList();
                     break;
                 case SDL_CONTROLLER_BUTTON_X: // Switch Y
                     plaShinyOnly_ = !plaShinyOnly_;

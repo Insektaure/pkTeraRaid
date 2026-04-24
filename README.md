@@ -124,7 +124,7 @@ sudo dkp-pacman -S switch-curl switch-zlib switch-libminizip switch-mbedtls
 
 Copy `overlay/pkTeraRaid.ovl` to `/switch/.overlays/pkTeraRaid.ovl` on your SD card. Ultrahand picks it up automatically; summon Ultrahand (default: `L + ZL + Dpad-Down` or your configured combo) while PLA is running.
 
-**Overlay navigation:** menu-based. The root shows the 5 Hisui regions with a per-region shiny count summary; select one with `A` to open its detail view (current shinies + spawners within 100 advances). `B` returns to the region list. `Y` rescans memory on either screen.
+**Overlay navigation:** menu-based. The root shows the 5 Hisui regions with a per-region shiny count summary; select one with `A` to open its detail view (current shinies + spawners within 100 advances). In the detail view, `X` teleports the player to the currently-highlighted spawner (raw marker coords). `B` returns to the region list. `Y` rescans memory on either screen.
 
 ## Building
 

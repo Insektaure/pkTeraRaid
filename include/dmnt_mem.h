@@ -26,29 +26,23 @@ namespace DmntMem {
 inline DmntCheatProcessMetadata g_meta = {};
 inline bool g_initialized = false;
 
+// Idempotent: safe to call multiple times. The IPC service is initialized
+// exactly once; subsequent calls only re-verify that we're still attached to
+// a cheat process. This prevents handle leaks from repeated scans (e.g. the
+// overlay's Y-rescan button firing many times in a session).
 inline bool init() {
-    Result rc = dmntchtInitialize();
-    if (R_FAILED(rc)) return false;
+    if (!g_initialized) {
+        if (R_FAILED(dmntchtInitialize())) return false;
+        g_initialized = true;
+    }
 
     bool hasProc = false;
-    rc = dmntchtHasCheatProcess(&hasProc);
-    if (R_FAILED(rc) || !hasProc) {
-        // Try force-opening
-        rc = dmntchtForceOpenCheatProcess();
-        if (R_FAILED(rc)) {
-            dmntchtExit();
-            return false;
-        }
+    dmntchtHasCheatProcess(&hasProc);
+    if (!hasProc) {
+        if (R_FAILED(dmntchtForceOpenCheatProcess())) return false;
     }
 
-    rc = dmntchtGetCheatProcessMetadata(&g_meta);
-    if (R_FAILED(rc)) {
-        dmntchtExit();
-        return false;
-    }
-
-    g_initialized = true;
-    return true;
+    return R_SUCCEEDED(dmntchtGetCheatProcessMetadata(&g_meta));
 }
 
 inline void exit() {
@@ -88,6 +82,24 @@ inline bool readHeap(uint64_t heapOffset, uint8_t* buf, size_t size) {
 
     uint64_t addr = g_meta.heap_extents.base + heapOffset;
     Result rc = dmntchtReadCheatProcessMemory(addr, buf, size);
+    return R_SUCCEEDED(rc);
+}
+
+// Resolve a pointer chain and write a block of memory at the final address.
+// chain[0] is the offset from main NSO base; chain[1..n-1] are dereference offsets.
+inline bool writeBlock(const uint64_t* chain, int chainLen, const uint8_t* buf, size_t size) {
+    if (!g_initialized || chainLen < 1) return false;
+
+    uint64_t addr = g_meta.main_nso_extents.base + chain[0];
+
+    for (int i = 1; i < chainLen; i++) {
+        uint64_t ptr = 0;
+        Result rc = dmntchtReadCheatProcessMemory(addr, &ptr, sizeof(uint64_t));
+        if (R_FAILED(rc) || ptr == 0) return false;
+        addr = ptr + chain[i];
+    }
+
+    Result rc = dmntchtWriteCheatProcessMemory(addr, buf, size);
     return R_SUCCEEDED(rc);
 }
 

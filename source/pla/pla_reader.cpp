@@ -142,6 +142,14 @@ void PlaReader::decorate(PlaRegion region, int shinyRolls, int maxAdvance) {
     }
 }
 
+bool PlaReader::teleport(float x, float y, float z) {
+    float pos[3] = {x, y, z};
+    return DmntMem::writeBlock(PlaPointers::PLAYER_POS_CHAIN,
+                               PlaPointers::PLAYER_POS_CHAIN_LEN,
+                               reinterpret_cast<const uint8_t*>(pos),
+                               sizeof(pos));
+}
+
 PlaOutbreak PlaReader::readOutbreak() {
     PlaOutbreak ob{};
     ob.present = false;

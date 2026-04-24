@@ -23,6 +23,11 @@ namespace PlaPointers {
     constexpr uint64_t OUTBREAK_BASE[] = {0x42BA6B0, 0x2B0, 0x58, 0x18};
     constexpr int      OUTBREAK_BASE_LEN = 4;
 
+    // Player world position — writable. Chain ends at 12 bytes of {float x, y, z}.
+    // [[[[[[main+42F18E8]+88]+90]+1F0]+18]+80]+90
+    constexpr uint64_t PLAYER_POS_CHAIN[] = {0x42F18E8, 0x88, 0x90, 0x1F0, 0x18, 0x80, 0x90};
+    constexpr int      PLAYER_POS_CHAIN_LEN = 7;
+
     constexpr uint64_t GROUP_STRIDE      = 0x440;
     constexpr uint64_t GROUP_GEN_SEED    = 0x20;     // generator_seed within group struct
     constexpr uint64_t GROUP_ACTIVE_SEED = 0x408;    // non-zero when outbreak group is live
@@ -71,6 +76,9 @@ public:
     void decorate(PlaRegion region, int shinyRolls = 1, int maxAdvance = 5000);
 
     PlaOutbreak readOutbreak();
+
+    // Write the player's world position. Returns true on success.
+    static bool teleport(float x, float y, float z);
 
     const std::vector<PlaSpawner>& spawners() const { return spawners_; }
 

@@ -124,7 +124,20 @@ public:
             else
                 std::snprintf(row, sizeof(row), "%s%s  in %d  (g%d)",
                               mark, species, sp.shinyAdvance, sp.groupId);
-            list->addItem(new tsl::elm::ListItem(row));
+            auto* item = new tsl::elm::ListItem(row);
+            // Teleport to this spawner when X is pressed while focused.
+            // Raw marker coords — matches PLA-Live-Map reference impl.
+            const float tx = sp.markerX;
+            const float ty = sp.markerY;
+            const float tz = sp.markerZ;
+            item->setClickListener([tx, ty, tz](u64 keys) {
+                if (keys & HidNpadButton_X) {
+                    PlaReader::teleport(tx, ty, tz);
+                    return true;
+                }
+                return false;
+            });
+            list->addItem(item);
         };
 
         if (!current.empty()) {
@@ -142,7 +155,7 @@ public:
         if (current.empty() && nearN.empty())
             list->addItem(new tsl::elm::ListItem("No shinies within reach."));
 
-        list->addItem(new tsl::elm::CategoryHeader("B: back    Y: rescan"));
+        list->addItem(new tsl::elm::CategoryHeader("X: teleport    B: back    Y: rescan"));
         frame->setContent(list);
         return frame;
     }

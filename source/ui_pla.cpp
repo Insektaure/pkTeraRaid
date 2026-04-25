@@ -85,6 +85,10 @@ void UI::rebuildPlaFilteredList() {
     for (int i = 0; i < (int)sps.size(); i++) {
         const auto& s = sps[i];
         if (s.region != plaTab_) continue;
+        // Hide spawners without an overworld slot table - typically story/fixed
+        // encounters (legendaries, lords, mission spawns) or unused placeholders.
+        // They produce "Group N" rows with no species, not useful for shiny hunting.
+        if (s.speciesId == 0) continue;
         if (plaShinyOnly_ && !(s.shinyAdvance == 0 && s.firstSpawn.shiny)) continue;
         plaFiltered_.push_back(i);
     }
@@ -297,6 +301,24 @@ void UI::drawPlaRow(int x, int y, int w, const PlaSpawner& s, bool selected, int
     if (line1Y < y + 2) line1Y = y + 2;
     int line2Y = y + rh / 2 + 4;
 
+    // Sprite on the left
+    int spriteSize = std::min(LIST_SPRITE_SIZE, rh - 4);
+    int spriteX = x + 4;
+    int spriteY = y + (rh - spriteSize) / 2;
+    if (s.speciesId > 0) {
+        if (SDL_Texture* sprite = getSprite(s.speciesId, s.form)) {
+            int texW, texH;
+            SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+            float scale = std::min((float)spriteSize / texW, (float)spriteSize / texH);
+            int dstW = (int)(texW * scale);
+            int dstH = (int)(texH * scale);
+            SDL_Rect dst = {spriteX + (spriteSize - dstW) / 2,
+                            spriteY + (spriteSize - dstH) / 2, dstW, dstH};
+            SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+        }
+    }
+    int textX = x + spriteSize + 12;
+
     char buf[128];
     if (s.speciesName) {
         snprintf(buf, sizeof(buf), "%s%s",
@@ -306,9 +328,9 @@ void UI::drawPlaRow(int x, int y, int w, const PlaSpawner& s, bool selected, int
     }
     SDL_Color nameColor = s.alpha ? SDL_Color{220,120,60,255} : textMain;
     if (currentShiny) nameColor = SDL_Color{30,25,10,255};
-    drawText(buf, x + 10, line1Y, nameColor, font_);
+    drawText(buf, textX, line1Y, nameColor, font_);
 
-    if (s.active) drawText("[active]", x + 200, line1Y, SDL_Color{140,200,140,255}, fontSmall_);
+    if (s.active) drawText("[active]", textX + 190, line1Y, SDL_Color{140,200,140,255}, fontSmall_);
 
     // Shiny / advance info
     if (s.shinyAdvance == 0 && s.firstSpawn.shiny) {
@@ -325,9 +347,9 @@ void UI::drawPlaRow(int x, int y, int w, const PlaSpawner& s, bool selected, int
     snprintf(ivs, sizeof(ivs), "%d/%d/%d/%d/%d/%d",
              s.firstSpawn.ivs[0], s.firstSpawn.ivs[1], s.firstSpawn.ivs[2],
              s.firstSpawn.ivs[3], s.firstSpawn.ivs[4], s.firstSpawn.ivs[5]);
-    drawText(ivs, x + 10, line2Y, textDim, fontSmall_);
+    drawText(ivs, textX, line2Y, textDim, fontSmall_);
 
-    drawText(NATURE_NAMES[s.firstSpawn.nature % 25], x + 200, line2Y, textDim, fontSmall_);
+    drawText(NATURE_NAMES[s.firstSpawn.nature % 25], textX + 190, line2Y, textDim, fontSmall_);
 
     char seedBuf[24];
     snprintf(seedBuf, sizeof(seedBuf), "%016lX", (unsigned long)s.groupSeed);
@@ -350,6 +372,23 @@ void UI::drawPlaDetailPopup(const PlaSpawner& s) {
     int y  = py + 15;
     int lh = 24;
 
+    // Sprite top-left
+    constexpr int DETAIL_SPRITE_SIZE = 80;
+    if (s.speciesId > 0) {
+        if (SDL_Texture* sprite = getSprite(s.speciesId, s.form)) {
+            int texW, texH;
+            SDL_QueryTexture(sprite, nullptr, nullptr, &texW, &texH);
+            float scale = std::min((float)DETAIL_SPRITE_SIZE / texW,
+                                   (float)DETAIL_SPRITE_SIZE / texH);
+            int dstW = (int)(texW * scale);
+            int dstH = (int)(texH * scale);
+            SDL_Rect dst = {lx + (DETAIL_SPRITE_SIZE - dstW) / 2,
+                            y + (DETAIL_SPRITE_SIZE - dstH) / 2, dstW, dstH};
+            SDL_RenderCopy(renderer_, sprite, nullptr, &dst);
+        }
+    }
+    int titleX = lx + DETAIL_SPRITE_SIZE + 12;
+
     char buf[128];
     if (s.speciesName) {
         snprintf(buf, sizeof(buf), "%s%s  (Group %d)",
@@ -359,7 +398,8 @@ void UI::drawPlaDetailPopup(const PlaSpawner& s) {
                  s.groupId, s.active ? "(active)" : "(inactive)");
     }
     SDL_Color titleColor = s.alpha ? SDL_Color{240,160,80,255} : COLOR_TERA;
-    drawText(buf, lx, y, titleColor, fontLarge_); y += 40;
+    drawText(buf, titleX, y + 10, titleColor, fontLarge_);
+    y += DETAIL_SPRITE_SIZE + 8;
 
     SDL_SetRenderDrawColor(renderer_, 70, 70, 90, 255);
     SDL_RenderDrawLine(renderer_, lx, y, px + POP_W - 20, y);

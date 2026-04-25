@@ -28,6 +28,7 @@ import urllib.request
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 OUT_FILE = os.path.join(PROJECT_DIR, "include", "pla", "pla_markers.h")
+SPECIES_FILE = os.path.join(PROJECT_DIR, "romfs", "data", "species_en.txt")
 
 MARKERS_BASE = "https://raw.githubusercontent.com/Lincoln-LM/JS-Finder/main/Resources/pla_spawners/jsons"
 SLOTS_BASE   = "https://raw.githubusercontent.com/Lincoln-LM/PLA-Live-Map/main/static/resources"
@@ -63,6 +64,13 @@ def fetch(url):
     with urllib.request.urlopen(url, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
+def load_species_index():
+    """Return a dict {display_name: species_id}. species_en.txt is 0-indexed:
+       line 1 = Egg (id 0), line 2 = Bulbasaur (id 1), ..."""
+    with open(SPECIES_FILE, encoding="utf-8") as f:
+        names = [line.strip() for line in f]
+    return {name: idx for idx, name in enumerate(names) if name}
+
 def pick_time_weather(tw_map):
     for k in PREFERRED_TW_KEYS:
         if k in tw_map:
@@ -89,6 +97,8 @@ def main():
         "struct SlotEntry {",
         "    const char* name;",
         "    uint16_t    weight;",
+        "    uint16_t    speciesId;   // national dex id; 0 = unresolved",
+        "    uint8_t     form;        // 0 = base, >0 = alternate form",
         "    bool        alpha;",
         "};",
         "",
@@ -104,6 +114,9 @@ def main():
         "struct RegionBounds { float minX, minZ, maxX, maxZ; int mapImgW, mapImgH; };",
         "",
     ]
+
+    species_index = load_species_index()
+    unresolved = set()
 
     flat_slots = []
     region_marker_blocks = []
@@ -129,8 +142,27 @@ def main():
             for sp_name, weight in tw_bucket.items():
                 w = int(weight)
                 alpha = sp_name.startswith("Alpha")
-                display = sp_name[5:] if alpha else sp_name
-                flat_slots.append((display, w, alpha))
+                raw = sp_name[5:] if alpha else sp_name
+                raw = raw.strip()
+
+                # Skip placeholder entries (PLA-Live-Map uses "None" for spawners
+                # without a standard overworld slot table — story/fixed spots).
+                if not raw or raw.lower() == "none":
+                    continue
+
+                # Parse "SpeciesName-N" → (species name, form N). Default form 0.
+                form = 0
+                base_name = raw
+                if "-" in raw:
+                    head, _, tail = raw.rpartition("-")
+                    if tail.isdigit():
+                        base_name = head
+                        form = int(tail)
+
+                sid = species_index.get(base_name, 0)
+                if sid == 0:
+                    unresolved.add(raw)
+                flat_slots.append((raw, w, sid, form, alpha))
                 slot_total += w
                 slot_count += 1
             if slot_count > 255: slot_count = 255
@@ -150,8 +182,8 @@ def main():
 
     # Emit SLOTS[]
     parts.append(f"inline constexpr SlotEntry SLOTS[] = {{")
-    for name, w, alpha in flat_slots:
-        parts.append(f'    {{ "{escape(name)}", {w}, {"true" if alpha else "false"} }},')
+    for name, w, sid, form, alpha in flat_slots:
+        parts.append(f'    {{ "{escape(name)}", {w}, {sid}, {form}, {"true" if alpha else "false"} }},')
     parts.append("};")
     parts.append(f"inline constexpr size_t SLOTS_COUNT = {len(flat_slots)};")
     parts.append("")
@@ -214,6 +246,8 @@ def main():
         f.write("\n".join(parts))
     total_slots = len(flat_slots)
     print(f"wrote {OUT_FILE} ({total_slots} slot entries)")
+    if unresolved:
+        print(f"unresolved species names ({len(unresolved)}):", sorted(unresolved))
 
 if __name__ == "__main__":
     sys.exit(main() or 0)

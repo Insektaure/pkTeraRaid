@@ -66,6 +66,7 @@ RegionStats statsFor(PlaRegion region) {
     const auto& sps = s.reader.spawners();
     for (const auto& sp : sps) {
         if (sp.region != (int)region) continue;
+        if (sp.speciesId == 0) continue;  // skip story/placeholder spawners
         out.total++;
         if (sp.shinyAdvance == 0 && sp.firstSpawn.shiny) out.current++;
         else if (sp.shinyAdvance > 0 && sp.shinyAdvance <= NEAR_THRESHOLD) out.near++;
@@ -99,6 +100,7 @@ public:
         for (int i = 0; i < (int)sps.size(); i++) {
             const auto& sp = sps[i];
             if (sp.region != (int)region_) continue;
+            if (sp.speciesId == 0) continue;  // skip story/placeholder spawners
             if (sp.shinyAdvance == 0 && sp.firstSpawn.shiny) current.push_back(i);
             else if (sp.shinyAdvance > 0 && sp.shinyAdvance <= NEAR_THRESHOLD) nearN.push_back(i);
             else if (sp.shinyAdvance > NEAR_THRESHOLD) farN.push_back(i);

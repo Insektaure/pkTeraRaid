@@ -54,6 +54,8 @@ struct PlaSpawner {
     PlaEncounter::Fixed firstSpawn;
     int       shinyAdvance;
     const char* speciesName;
+    uint16_t    speciesId;   // national dex id; 0 if unresolved
+    uint8_t     form;        // form index for sprite lookup
     bool        alpha;
 };
 

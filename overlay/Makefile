@@ -13,7 +13,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 APP_TITLE   := pkTeraRaid - Arceus Shiny Scanner
 APP_AUTHOR  := Insektaure
-APP_VERSION := 1.0.0
+APP_VERSION := 1.0.1
 TARGET      := pkTeraRaid
 BUILD       := build
 

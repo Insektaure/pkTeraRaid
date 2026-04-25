@@ -1047,35 +1047,41 @@ void UI::updateStick(int16_t axisX, int16_t axisY) {
 
 // --- Sprites ---
 
-SDL_Texture* UI::getSprite(uint16_t species) {
-    auto it = spriteCache_.find(species);
+SDL_Texture* UI::getSprite(uint16_t species, uint8_t form) {
+    uint32_t key = (uint32_t)species | ((uint32_t)form << 16);
+    auto it = spriteCache_.find(key);
     if (it != spriteCache_.end())
         return it->second;
 
+    auto tryLoad = [&](const char* filename) -> SDL_Texture* {
+        std::string path = std::string("romfs:/sprites/") + filename;
+        SDL_Surface* surf = IMG_Load(path.c_str());
+        if (!surf) return nullptr;
+        SDL_Texture* t = SDL_CreateTextureFromSurface(renderer_, surf);
+        SDL_FreeSurface(surf);
+        return t;
+    };
+
+    SDL_Texture* tex = nullptr;
     char filename[64];
-    std::snprintf(filename, sizeof(filename), "%03d.png", species);
 
-    std::string path;
-#ifdef __SWITCH__
-    path = std::string("romfs:/sprites/") + filename;
-#else
-    path = std::string("romfs/sprites/") + filename;
-#endif
-
-    SDL_Surface* surf = IMG_Load(path.c_str());
-    if (!surf) {
-        spriteCache_[species] = nullptr;
-        return nullptr;
+    // Try form-specific sprite first (e.g. 058-1.png for Hisuian Growlithe).
+    if (form != 0) {
+        std::snprintf(filename, sizeof(filename), "%03d-%d.png", species, form);
+        tex = tryLoad(filename);
+    }
+    // Fall back to base sprite (e.g. 058.png).
+    if (!tex) {
+        std::snprintf(filename, sizeof(filename), "%03d.png", species);
+        tex = tryLoad(filename);
     }
 
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer_, surf);
-    SDL_FreeSurface(surf);
-    spriteCache_[species] = tex;
+    spriteCache_[key] = tex;
     return tex;
 }
 
 void UI::freeSprites() {
-    for (auto& [id, tex] : spriteCache_) {
+    for (auto& [key, tex] : spriteCache_) {
         if (tex) SDL_DestroyTexture(tex);
     }
     spriteCache_.clear();

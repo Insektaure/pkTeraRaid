@@ -106,8 +106,10 @@ private:
     void loadTextData(const std::string& dataDir);
 
     // Sprite cache: species ID -> texture
-    std::unordered_map<uint16_t, SDL_Texture*> spriteCache_;
-    SDL_Texture* getSprite(uint16_t species);
+    // Sprite cache keyed by (species | form << 16) so form variants don't collide
+    // with base forms. Loader tries "{NNN}-{form}.png" first, falls back to "{NNN}.png".
+    std::unordered_map<uint32_t, SDL_Texture*> spriteCache_;
+    SDL_Texture* getSprite(uint16_t species, uint8_t form = 0);
     void freeSprites();
 
     // Map textures

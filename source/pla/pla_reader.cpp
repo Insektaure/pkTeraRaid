@@ -131,12 +131,16 @@ void PlaReader::decorate(PlaRegion region, int shinyRolls, int maxAdvance) {
                                                  s.guaranteedIvs, true, maxAdvance);
 
         s.speciesName = nullptr;
+        s.speciesId = 0;
+        s.form = 0;
         s.alpha = false;
         if (m->slotCount > 0 && m->slotTotal > 0) {
             const auto* entry = PlaMarkers::resolveSlot(*m, slotRoll01 * m->slotTotal);
             if (entry) {
                 s.speciesName = entry->name;
-                s.alpha = entry->alpha;
+                s.speciesId   = entry->speciesId;
+                s.form        = entry->form;
+                s.alpha       = entry->alpha;
             }
         }
     }

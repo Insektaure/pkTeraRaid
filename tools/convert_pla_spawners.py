@@ -162,7 +162,8 @@ def main():
                 sid = species_index.get(base_name, 0)
                 if sid == 0:
                     unresolved.add(raw)
-                flat_slots.append((raw, w, sid, form, alpha))
+                # Display the clean species name (sprite already encodes the form).
+                flat_slots.append((base_name, w, sid, form, alpha))
                 slot_total += w
                 slot_count += 1
             if slot_count > 255: slot_count = 255

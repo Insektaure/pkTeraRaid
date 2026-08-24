@@ -79,6 +79,27 @@ public:
 
     PlaOutbreak readOutbreak();
 
+#ifdef PLA_OVERLAY_POLL
+    // --- Cheap polling helpers (used by the detached overlay HUD) ---
+    // Compiled into the overlay only; the main app never polls.
+    // These exist so a live view can detect "did anything actually change?"
+    // without paying for a full readLive(). All three skip the live-position
+    // list, so PlaSpawner::active stays as of the last readLive().
+
+    // Size of the runtime live-position list. 3 IPC reads: the cheapest signal
+    // that spawns loaded, despawned or were caught.
+    bool pollLiveCount(uint32_t& outCount);
+
+    // Read every group's generator seed. outSeeds must hold maxGroups entries;
+    // entries are 0 where the group is empty. Bulk-reads the 0x440-stride
+    // window in chunks, so this costs ~11 IPC reads rather than 3 per group.
+    bool pollGroupSeeds(uint64_t* outSeeds, int maxGroups = 256);
+
+    // Rebuild the spawner list from seeds obtained by pollGroupSeeds().
+    // Pure CPU - no I/O. Call decorate() afterwards to re-derive species/shiny.
+    void setGroupSeeds(const uint64_t* seeds, int count);
+#endif // PLA_OVERLAY_POLL
+
     // Write the player's world position. Returns true on success.
     static bool teleport(float x, float y, float z);
 

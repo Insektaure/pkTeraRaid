@@ -126,6 +126,20 @@ Copy `overlay/pkTeraRaid.ovl` to `/switch/.overlays/pkTeraRaid.ovl` on your SD c
 
 **Overlay navigation:** menu-based. The root shows the 5 Hisui regions with a per-region shiny count summary; select one with `A` to open its detail view (current shinies + spawners within 100 advances). In the detail view, `X` teleports the player to the currently-highlighted spawner (raw marker coords). `B` returns to the region list. `Y` rescans memory on either screen.
 
+**Detached mode:** press `L + R` on either screen to detach.
+
+The overlay stays on screen but hands controller input back to the game, so the shiny list can be read while playing.
+
+While detached the list is replaced by a static read-only HUD — nothing is focusable, so gameplay input can't move the cursor or fire a teleport — and the overlay ignores everything except the toggle.
+
+Press `L + R` again (or the Ultrahand launch combo) to re-attach; the subtitle always shows the way back. Detaching also suppresses the usual dismiss paths (touching outside the overlay, `HOME`/power), so the overlay survives normal play.
+
+While detached the HUD also refreshes itself, but only when the game data actually moved.
+
+Once a second it reads a single counter (3 memory reads) to see whether anything spawned, despawned or was caught; only if that moved (or every 10th tick as a safety net) does it re-read all 256 group seeds (~11 reads) and compare them; only if a seed actually changed does it re-run the shiny search and redraw.
+
+Standing still costs 3 reads per second and no CPU. The attached list is unaffected: it still refreshes on `Y` only.
+
 ## Building
 
 ### Prerequisites

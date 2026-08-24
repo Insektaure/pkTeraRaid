@@ -2,6 +2,7 @@
 #include "pla/pla_markers.h"
 #include "dmnt_mem.h"
 #include "xoroshiro128plus.h"
+#include <algorithm>
 #include <cstring>
 #include <cstdio>
 
@@ -36,7 +37,84 @@ bool readFloat3(const uint64_t* base, int baseLen, uint64_t tail, float out[3]) 
     return true;
 }
 
+#ifdef PLA_OVERLAY_POLL
+// Resolve the spawner array base once: [[main+42A6EE0]+330]. 2 IPC reads.
+bool resolveSpawnerBase(uint64_t& out) {
+    const uint64_t chain[3] = {PlaPointers::SPAWNER_BASE[0], PlaPointers::SPAWNER_BASE[1], 0};
+    return DmntMem::resolveChain(chain, 3, out);
+}
+
+#endif // PLA_OVERLAY_POLL
+
 } // anonymous
+
+#ifdef PLA_OVERLAY_POLL
+
+bool PlaReader::pollLiveCount(uint32_t& outCount) {
+    uint64_t base = 0;
+    if (!resolveSpawnerBase(base)) return false;
+
+    uint32_t raw = 0;
+    if (!DmntMem::readAbsolute(base + PlaPointers::SIZE_FIELD,
+                               reinterpret_cast<uint8_t*>(&raw), sizeof(raw)))
+        return false;
+
+    outCount = raw / 0x40;
+    return true;
+}
+
+bool PlaReader::pollGroupSeeds(uint64_t* outSeeds, int maxGroups) {
+    using namespace PlaPointers;
+    if (!outSeeds || maxGroups <= 0) return false;
+
+    uint64_t base = 0;
+    if (!resolveSpawnerBase(base)) return false;
+
+    for (int gid = 0; gid < maxGroups; gid++) outSeeds[gid] = 0;
+
+    // Group gid's generator seed sits at POS_POSITION + gid*GROUP_STRIDE +
+    // GROUP_GEN_SEED. Those are 8 useful bytes every 0x440, so read the window
+    // in big chunks and pick the seeds out locally - far fewer round trips
+    // than one read per group.
+    constexpr size_t CHUNK = 0x8000;  // 32 KiB
+    static uint8_t buf[CHUNK];
+
+    const uint64_t windowStart = POS_POSITION;
+    const uint64_t windowEnd   = POS_POSITION
+                               + (uint64_t)(maxGroups - 1) * GROUP_STRIDE
+                               + GROUP_GEN_SEED + sizeof(uint64_t);
+
+    for (uint64_t start = windowStart; start < windowEnd; start += CHUNK) {
+        const size_t len = (size_t)std::min<uint64_t>(CHUNK, windowEnd - start);
+        if (!DmntMem::readAbsolute(base + start, buf, len)) return false;
+
+        for (int gid = 0; gid < maxGroups; gid++) {
+            const uint64_t off = POS_POSITION + (uint64_t)gid * GROUP_STRIDE + GROUP_GEN_SEED;
+            if (off < start || off + sizeof(uint64_t) > start + len) continue;
+            std::memcpy(&outSeeds[gid], buf + (off - start), sizeof(uint64_t));
+        }
+    }
+    return true;
+}
+
+void PlaReader::setGroupSeeds(const uint64_t* seeds, int count) {
+    // livePositions_ is deliberately left alone: it is only used for the
+    // `active` flag, and refreshing it is what makes a full readLive() costly.
+    spawners_.clear();
+
+    for (int gid = 0; gid < count; gid++) {
+        if (seeds[gid] == 0) continue;
+
+        PlaSpawner s{};
+        s.groupId = gid;
+        s.generatorSeed = seeds[gid];
+        s.groupSeed = seeds[gid] - Xoroshiro128Plus::XOROSHIRO_CONST;
+        s.region = -1;
+        spawners_.push_back(s);
+    }
+}
+
+#endif // PLA_OVERLAY_POLL
 
 bool PlaReader::readLive(int maxGroups) {
     spawners_.clear();

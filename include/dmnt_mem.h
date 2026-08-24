@@ -75,6 +75,36 @@ inline bool readBlock(const uint64_t* chain, int chainLen, uint8_t* buf, size_t 
     return R_SUCCEEDED(rc);
 }
 
+#ifdef PLA_OVERLAY_POLL
+// Overlay-only (detached HUD polling); not compiled into the main app.
+
+// Resolve a pointer chain to its final address without reading a payload.
+// Lets a caller pay the chain walk once and then issue many reads against the
+// resolved base, instead of re-walking it per field like readBlock() does.
+inline bool resolveChain(const uint64_t* chain, int chainLen, uint64_t& outAddr) {
+    if (!g_initialized || chainLen < 1) return false;
+
+    uint64_t addr = g_meta.main_nso_extents.base + chain[0];
+
+    for (int i = 1; i < chainLen; i++) {
+        uint64_t ptr = 0;
+        Result rc = dmntchtReadCheatProcessMemory(addr, &ptr, sizeof(uint64_t));
+        if (R_FAILED(rc) || ptr == 0) return false;
+        addr = ptr + chain[i];
+    }
+
+    outAddr = addr;
+    return true;
+}
+
+// Read from an address already resolved by resolveChain(). One IPC call.
+inline bool readAbsolute(uint64_t addr, uint8_t* buf, size_t size) {
+    if (!g_initialized) return false;
+    return R_SUCCEEDED(dmntchtReadCheatProcessMemory(addr, buf, size));
+}
+
+#endif // PLA_OVERLAY_POLL
+
 // Read a block directly from the game heap at a fixed offset.
 // Used by SwSh den crawler (dens are at heap base + offset, not pointer chains).
 inline bool readHeap(uint64_t heapOffset, uint8_t* buf, size_t size) {

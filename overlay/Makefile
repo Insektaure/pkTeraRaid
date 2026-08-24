@@ -13,7 +13,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 APP_TITLE   := pkTeraRaid - Arceus Shiny Scanner
 APP_AUTHOR  := Insektaure
-APP_VERSION := 1.0.1
+APP_VERSION := 1.0.2
 TARGET      := pkTeraRaid
 BUILD       := build
 
@@ -34,6 +34,10 @@ CFLAGS := -g -Wall -O2 -ffunction-sections -fdata-sections -flto \
           $(ARCH) $(DEFINES)
 
 CFLAGS += $(INCLUDE) -D__SWITCH__ -DAPP_VERSION=\"$(APP_VERSION)\" -D_FORTIFY_SOURCE=2
+
+# Compiles the shared PLA core's cheap polling helpers, used only by the
+# overlay's detached HUD. The main app builds without them.
+CFLAGS += -DPLA_OVERLAY_POLL=1
 
 # libultrahand options
 UI_OVERRIDE_PATH := /config/pkTeraRaid/
